@@ -110,3 +110,50 @@ export GITHUB_TOKEN='seu_token_github'
 ```
 
 Se ocorrer erro de versao do Java, confirme que `java -version` esta em Java 21.
+
+
+
+
+
+```terminal
+curl -X POST http://localhost:8080/api/projects \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "sigla":"ABCDE",
+    "name":"Spring IA",
+    "constitution":"
+      # Estrutura do projeto
+      ## backend
+      ### Stack
+        - Java 21
+        - Spring Boot
+        - Spring Data JPA
+      ### Estrutura de pastas
+        - src/main/java/br/com/codersistemas/condominiosadm
+          - conections - conexoes com sistemas externos
+          - constantes - constantes do sistema
+          - consumer - consumidores de eventos de RabbitMQ
+          - controller - Endipoints REST
+          - domain - entidades do sistema
+          - dto - objetos de transferencia de dados
+          - enums - enumeradores do sistema
+          - repository - repositórios de acesso a dados
+          - service - regras de negocio
+          - specification - especificações para consultas dinâmicas
+      ## frontend
+      ### Stack
+        - Angular 16
+        - Spring Boot
+        - Spring Data JPA
+      ### Estrutura de pastas
+        - src/app
+          - features - funcionalidades do sistema
+          - service - serviços de comunicação com backend
+          - model - modelos de dados
+    ",
+    "repos":[
+      {"path":"https://github.com/gustavocontabeis/catalogo-musical-api","type":"BACKEND","branch":"master","name":"microservico-unico"},
+      {"path":"https://github.com/gustavocontabeis/catalogo-musical","type":"FRONTEND","branch":"master","name":"frontend-unico"},
+    ]
+  }'
+```

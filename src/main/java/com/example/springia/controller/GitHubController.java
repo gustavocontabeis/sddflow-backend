@@ -1,6 +1,12 @@
 package com.example.springia.controller;
 
-import com.example.springia.dto.*;
+import com.example.springia.dto.CloneRepositoryRequest;
+import com.example.springia.dto.CloneRepositoryResponse;
+import com.example.springia.dto.CommitRequest;
+import com.example.springia.dto.CommitResponse;
+import com.example.springia.dto.ListRepositoriesResponse;
+import com.example.springia.dto.PullRequestRequest;
+import com.example.springia.dto.PullRequestResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,5 +52,28 @@ public class GitHubController {
     @PostMapping("/pull-request")
     public ResponseEntity<PullRequestResponse> createPullRequest(@RequestBody PullRequestRequest request) throws Exception {
         return ResponseEntity.ok(githubService.createPullRequest(request));
+    }
+
+    /**
+     * Clona um repositório em diretório temporário
+     * curl -X POST http://localhost:8080/api/github/clone \
+     *   -H 'Content-Type: application/json' \
+     *   -d '{"owner":"gustavocontabeis","repo":"meu-repo","branch":"main"}'
+     */
+    @PostMapping("/clone")
+    public ResponseEntity<CloneRepositoryResponse> cloneRepository(@RequestBody CloneRepositoryRequest request) {
+        return ResponseEntity.ok(githubService.cloneRepository(request));
+    }
+
+    /**
+     * Clona um repositório em diretório temporário
+     * curl -X POST http://localhost:8080/api/github/clone \
+     *   -H 'Content-Type: application/json' \
+     *   -d '{"owner":"gustavocontabeis","repo":"meu-repo","branch":"main"}'
+     */
+    @PostMapping("/discovery")
+    public ResponseEntity.HeadersBuilder<?> discovery(@RequestBody CloneRepositoryRequest request) {
+        githubService.discovery(request);
+        return ResponseEntity.noContent();
     }
 }

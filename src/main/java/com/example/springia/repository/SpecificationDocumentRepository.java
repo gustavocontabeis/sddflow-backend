@@ -1,14 +1,15 @@
 package com.example.springia.repository;
 
-import com.example.springia.model.SpecificationDocument;
+import com.example.springia.model.UserStory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface SpecificationDocumentRepository extends JpaRepository<SpecificationDocument, Long> {
-    Optional<SpecificationDocument> findTopBySessionIdOrderByGeneratedAtDesc(String sessionId);
+public interface SpecificationDocumentRepository extends JpaRepository<UserStory, Long> {
 
-    List<SpecificationDocument> findBySessionId(String sessionId);
+    Optional<UserStory> findTopByConversationSessionIdOrderByGeneratedAtDesc(Long sessionId);
+
+    List<UserStory> findByConversationSessionId(Long sessionId);
 }
 

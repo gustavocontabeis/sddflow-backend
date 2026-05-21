@@ -6,27 +6,24 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.List;
+
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Entity
-public class Message {
+public class Project {
 
     @Id
     @GeneratedValue
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversation_session")
-    private ConversationSession conversationSession;
-
-    private String role;
-
+    private String sigla;
+    private String name;
     @Lob
-    private String content;
+    private String constitution;
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    private List<CodeRepo> repos;
 
-    private LocalDateTime timestamp;
 }

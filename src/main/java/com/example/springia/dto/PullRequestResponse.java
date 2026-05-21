@@ -1,8 +1,15 @@
 package com.example.springia.dto;
-public record PullRequestResponse(
-int number,
-String title,
-String state,
-String htmlUrl
-) {
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class PullRequestResponse {
+    private int number;
+    private String title;
+    private String state;
+    private String htmlUrl;
 }

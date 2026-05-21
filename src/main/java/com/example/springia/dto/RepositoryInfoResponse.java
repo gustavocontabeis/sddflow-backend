@@ -1,9 +1,16 @@
 package com.example.springia.dto;
-public record RepositoryInfoResponse(
-String name,
-String url,
-String description,
-int stars,
-int forks
-) {
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class RepositoryInfoResponse {
+    private String name;
+    private String url;
+    private String description;
+    private int stars;
+    private int forks;
 }

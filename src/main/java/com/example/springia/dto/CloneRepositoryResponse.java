@@ -7,11 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommitRequest {
+public class CloneRepositoryResponse {
     private String owner;
     private String repo;
     private String branch;
-    private String message;
-    private String filePath;
-    private String fileContent;
+    private String clonedPath;
+    private long durationMs;
 }

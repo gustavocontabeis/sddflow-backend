@@ -1,32 +1,31 @@
 package com.example.springia.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Entity
-public class Message {
+public class Prompt {
 
     @Id
     @GeneratedValue
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversation_session")
-    private ConversationSession conversationSession;
-
-    private String role;
+    @Column(name = "prompt_key")
+    private String key;
 
     @Lob
     private String content;
 
-    private LocalDateTime timestamp;
 }

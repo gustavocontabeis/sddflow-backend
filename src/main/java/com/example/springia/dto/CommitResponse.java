@@ -1,8 +1,15 @@
 package com.example.springia.dto;
-public record CommitResponse(
-String sha,
-String message,
-String author,
-String url
-) {
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class CommitResponse {
+    private String sha;
+    private String message;
+    private String author;
+    private String url;
 }

@@ -1,7 +1,15 @@
 package com.example.springia.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
-public record ListRepositoriesResponse(
-List<RepositoryInfoResponse> repositories,
-int total
-) {
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ListRepositoriesResponse {
+    private List<RepositoryInfoResponse> repositories;
+    private int total;
 }
