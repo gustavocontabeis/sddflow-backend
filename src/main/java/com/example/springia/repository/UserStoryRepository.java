@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface UserStoryRepository extends JpaRepository<UserStory, Long> {
 
+    List<UserStory> findAllByOrderByGeneratedAtDesc();
+
     Optional<UserStory> findByConversationSessionId(Long sessionId);
 
     List<UserStory> findByStatus(SpecificationDocumentStatus status);

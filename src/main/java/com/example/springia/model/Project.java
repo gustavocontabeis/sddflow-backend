@@ -23,7 +23,7 @@ public class Project {
     private String name;
     @Lob
     private String constitution;
-    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<CodeRepo> repos;
 
 }

@@ -19,7 +19,20 @@ public class ProjectService {
 
     @Transactional
     public ProjectResponse create(ProjectCreateRequest request) {
-        Project project = new Project();
+        return saveOrUpdate(request);
+    }
+
+    @Transactional
+    public ProjectResponse updade(ProjectCreateRequest request) {
+        return saveOrUpdate(request);
+    }
+
+    private ProjectResponse saveOrUpdate(ProjectCreateRequest request) {
+        Project project = request.getId() != null
+                ? projectRepository.findById(request.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Project nao encontrado: " + request.getId()))
+                : new Project();
+
         project.setSigla(request.getSigla());
         project.setName(request.getName());
         project.setConstitution(request.getConstitution());
@@ -32,31 +45,6 @@ public class ProjectService {
                         repo.setType(repoRequest.getType());
                         repo.setBranch(repoRequest.getBranch());
                         repo.setName(repoRequest.getName());
-                        repo.setProject(project);
-                        return repo;
-                    })
-                    .toList();
-            project.setRepos(repos);
-        }
-
-        Project saved = projectRepository.save(project);
-        return toResponse(saved);
-    }
-
-    @Transactional
-    public ProjectResponse updade(ProjectCreateRequest request) {
-        Project project = new Project();
-        project.setId(request.getId());
-        project.setSigla(request.getSigla());
-        project.setName(request.getName());
-        project.setConstitution(request.getConstitution());
-
-        if (request.getRepos() != null && !request.getRepos().isEmpty()) {
-            List<CodeRepo> repos = request.getRepos().stream()
-                    .map(repoRequest -> {
-                        CodeRepo repo = new CodeRepo();
-                        repo.setPath(repoRequest.getPath());
-                        repo.setType(repoRequest.getType());
                         repo.setProject(project);
                         return repo;
                     })
