@@ -26,6 +26,7 @@ public class ChatService {
     private final ProjectRepository projectRepository;
     private final SpecificationDocumentRepository specificationDocumentRepository;
     private final UserStoryRepository userStoryRepository;
+    private final PromptRepository promptRepository;
 
     public ChatService(
             ChatClient.Builder chatClientBuilder,
@@ -33,7 +34,8 @@ public class ChatService {
             MessageRepository messageRepository,
             ProjectRepository projectRepository,
             SpecificationDocumentRepository specificationDocumentRepository,
-            UserStoryRepository userStoryRepository
+            UserStoryRepository userStoryRepository,
+            PromptRepository promptRepository
     ) {
         this.chatClient = chatClientBuilder.build();
         this.conversationRepository = conversationRepository;
@@ -41,6 +43,7 @@ public class ChatService {
         this.projectRepository = projectRepository;
         this.specificationDocumentRepository = specificationDocumentRepository;
         this.userStoryRepository = userStoryRepository;
+        this.promptRepository = promptRepository;
     }
 
     public Message createSession(CreateSessionRequest request) {
@@ -245,13 +248,32 @@ public class ChatService {
     }
 
     public Message aprove(Long sessionId) {
+
         Message message = messageRepository.findByLastMessage(sessionId).orElse(null);
+
         ConversationSession conversationSession = message.getConversationSession();
         conversationSession.setStatus(SpecificationDocumentStatus.APPROVED);
         conversationRepository.save(conversationSession);
+
+        String prompt = promptRepository.findByKey("CREATE_USER_STORY").orElse(null).getContent();
+
+        String promptCompleto = prompt.concat(":\n\n\n")
+                .concat("---------------------------\n")
+                .concat(message.getContent())
+                .concat("\n---------------------------\n");
+
+        log.info("[CHAT] prompt CREATE_USER_STORY [{}]: {} ", promptCompleto.length(), promptCompleto);
+
+        String response = chatClient.prompt()
+                .user(promptCompleto)
+                .call()
+                .content();
+
+        log.info("[CHAT] conteudo da User Story: {} ", promptCompleto);
+
         userStoryRepository.save(UserStory.builder()
                 .conversationSession(conversationSession)
-                .content(message.getContent())
+                .content(response)
                 .status(SpecificationDocumentStatus.APPROVED)
                 .generatedAt(LocalDateTime.now())
                 .build());

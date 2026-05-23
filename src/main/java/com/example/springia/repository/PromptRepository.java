@@ -7,5 +7,7 @@ import java.util.Optional;
 
 public interface PromptRepository extends JpaRepository<Prompt, Long> {
     Optional<Prompt> findByKey(String key);
+
+    void deleteByKey(String key);
 }
 

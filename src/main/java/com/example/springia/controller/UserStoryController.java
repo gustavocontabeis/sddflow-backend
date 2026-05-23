@@ -7,6 +7,7 @@ import com.example.springia.repository.UserStoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -108,6 +109,25 @@ public class UserStoryController {
                     userStory.setContent(request.getContent());
                     UserStory updated = userStoryRepository.save(userStory);
                     return ResponseEntity.ok(sanitize(updated));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Remove uma user story por ID.
+     *
+     * <p>Exemplo de execucao:</p>
+     * <pre>{@code
+     * curl -X DELETE http://localhost:8080/user-stories/1
+     * }</pre>
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        log.info("[API] DELETE /user-stories/{}", id);
+        return userStoryRepository.findById(id)
+                .map(existing -> {
+                    userStoryRepository.deleteById(id);
+                    return ResponseEntity.noContent().<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

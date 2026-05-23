@@ -1,8 +1,6 @@
 package com.example.springia.service;
 
-import com.example.springia.model.PlanSdd;
-import com.example.springia.model.SpecSdd;
-import com.example.springia.model.UserStory;
+import com.example.springia.model.*;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.UserStoryRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -25,25 +23,32 @@ public class SddService {
     @Autowired
     private PlanSddService planSddService;
 
+    @Autowired
+    private TaskSddService taskSddService;
+
+    @Autowired
+    private PromptService promptService;
+
     public String createSpec(Long userStoryId) {
         log.info("Iniciando geracao de SPEC para userStoryId={}", userStoryId);
 
         UserStory userStory = userStoryRepository.findById(userStoryId)
                 .orElseThrow(() -> new IllegalArgumentException("UserStory nao encontrada: " + userStoryId));
 
-        String instruction = "Crie um documento SDD em Markdown com objetivo, escopo, requisitos funcionais, regras de negocio e criterios de aceite.";
+        String prompt = promptService.findByKey("CREATE_SSD_SPEC").orElse(null).getContent();
+
         String projectConstitution = userStory.getConversationSession().getProject().getConstitution();
 
-        if (!projectConstitution.isBlank()) {
-            log.debug("Aplicando constitution na SPEC para userStoryId={}, constitutionLength={}", userStoryId, projectConstitution.length());
-            instruction += "\n\nCONSTITUTION DO PROJETO (siga estritamente estas diretrizes):\n" + projectConstitution;
-        } else {
-            log.debug("Projeto sem constitution para userStoryId={}", userStoryId);
-        }
+        prompt = prompt
+                .replace("{{CONSTITUTION}}", projectConstitution)
+                .replace("{{USER_STORY}}", userStory.getContent());
 
-        String spec = generateFromUserStory(userStory, instruction);
+        log.info("SPEC promptLength={}, prompt:={}", prompt.length(), prompt);
+
+        String spec = chatService.chat(prompt);
 
         specSddService.saveSpec(userStory, spec);
+
         log.info("SPEC gerada e salva com sucesso para userStoryId={}, specLength={}", userStoryId, spec.length());
 
         return spec;
@@ -51,42 +56,56 @@ public class SddService {
 
     public String createPlan(Long userStoryId) {
         log.info("Iniciando geracao de PLAN para userStoryId={}", userStoryId);
-        //Busca a constitution do projeto através da userStory
-        //Busca o Spec desta User Story
-        //Gera o Plan
-        //Grava o Plan usando o PlanSddService
+
         UserStory userStory = userStoryRepository.findById(userStoryId)
                 .orElseThrow(() -> new IllegalArgumentException("UserStory nao encontrada: " + userStoryId));
 
-        String instruction = "Crie um plano de implementacao em Markdown com fases, dependencias, riscos, mitigacoes e entregas por fase.";
-        String projectConstitution = userStory.getConversationSession().getProject().getConstitution();
+        String prompt = promptService.findByKey("CREATE_SSD_PLAN").orElse(null).getContent();
 
-        if (!projectConstitution.isBlank()) {
-            log.debug("Aplicando constitution no PLAN para userStoryId={}, constitutionLength={}", userStoryId, projectConstitution.length());
-            instruction += "\n\nCONSTITUTION DO PROJETO (siga estritamente estas diretrizes):\n" + projectConstitution;
-        } else {
-            log.debug("Projeto sem constitution para userStoryId={}", userStoryId);
-        }
+        ConversationSession conversationSession = userStory.getConversationSession();
+        String projectConstitution = conversationSession.getProject().getConstitution();
 
-        SpecSdd specSdd = specSddService.findById(userStory.getSpec().getId()).orElse(null);
-        if (specSdd == null) {
-            log.error("Nao foi possivel gerar PLAN: SPEC nao encontrada para userStoryId={}, specId={}", userStoryId, userStory.getSpec().getId());
-            throw new IllegalStateException("SPEC nao encontrada para userStoryId: " + userStoryId);
-        }
-        log.debug("SPEC carregada para PLAN em userStoryId={}, specId={}", userStoryId, userStory.getSpec().getId());
-        instruction += "\n\nSPEC DO PROJETO (siga estritamente estas diretrizes):\n" + specSdd.getContent();
+        prompt = prompt
+                .replace("{{CONSTITUTION}}", projectConstitution)
+                .replace("{{USER_STORY}}", userStory.getContent())
+                .replace("{{SDD_SPEC}}", userStory.getSpec().getContent());
 
-        String plan = generateFromUserStory(userStory, instruction);
+        log.info("PLAN promptLength={}, prompt:={}", prompt.length(), prompt);
 
-        PlanSdd save = planSddService.save(PlanSdd.builder().id(null).userStory(userStory).status(SpecificationDocumentStatus.IN_PROGRESS).build());
-        log.info("PLAN gerado para userStoryId={}, planLength={}, planSddId={}", userStoryId, plan.length(), save.getId());
+        String plan = chatService.chat(prompt);
+
+        planSddService.save(PlanSdd.builder().status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(plan).build());
+
+        log.info("PLAN gerada e salva com sucesso para userStoryId={}, specLength={}", userStoryId, plan.length());
 
         return plan;
     }
 
     public String createTask(Long userStoryId) {
         log.info("Iniciando geracao de TASK para userStoryId={}", userStoryId);
-        return generateFromUserStory(userStoryId, "Crie uma lista de tarefas tecnicas em Markdown, com prioridade, descricao, criterio de pronto e estimativa para cada tarefa.");
+
+        UserStory userStory = userStoryRepository.findById(userStoryId)
+                .orElseThrow(() -> new IllegalArgumentException("UserStory nao encontrada: " + userStoryId));
+
+        String prompt = promptService.findByKey("CREATE_SSD_TASK").orElse(null).getContent();
+
+        ConversationSession conversationSession = userStory.getConversationSession();
+        String projectConstitution = conversationSession.getProject().getConstitution();
+
+        prompt = prompt
+                .replace("{{CONSTITUTION}}", projectConstitution)
+                .replace("{{SDD_SPEC}}", userStory.getSpec().getContent())
+                .replace("{{SDD_PLAN}}", userStory.getPlan().getContent());
+
+        log.info("TASK promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
+
+        String content = chatService.chat(prompt);
+
+        taskSddService.save(TaskSdd.builder().status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
+
+        log.info("TASK gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
+
+        return content;
     }
 
     public String createImpl(Long userStoryId) {

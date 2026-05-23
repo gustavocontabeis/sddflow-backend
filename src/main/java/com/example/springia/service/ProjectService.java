@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -37,10 +38,12 @@ public class ProjectService {
         project.setName(request.getName());
         project.setConstitution(request.getConstitution());
 
+        List<CodeRepo> repos = new ArrayList<>();
         if (request.getRepos() != null && !request.getRepos().isEmpty()) {
-            List<CodeRepo> repos = request.getRepos().stream()
+            repos = request.getRepos().stream()
                     .map(repoRequest -> {
                         CodeRepo repo = new CodeRepo();
+                        repo.setId(repoRequest.getId());
                         repo.setPath(repoRequest.getPath());
                         repo.setType(repoRequest.getType());
                         repo.setBranch(repoRequest.getBranch());
@@ -48,9 +51,9 @@ public class ProjectService {
                         repo.setProject(project);
                         return repo;
                     })
-                    .toList();
-            project.setRepos(repos);
+                    .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         }
+        project.setRepos(repos);
 
         Project saved = projectRepository.save(project);
         return toResponse(saved);
@@ -76,6 +79,11 @@ public class ProjectService {
 
     public Project findById(long id) {
         return projectRepository.findById(id).orElse(null);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        projectRepository.deleteById(id);
     }
 }
 

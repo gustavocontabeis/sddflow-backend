@@ -22,6 +22,7 @@ public class ProjectCreateRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ProjectRepoRequest {
+        private Long id;
         private String path;
         private String branch;
         private String name;

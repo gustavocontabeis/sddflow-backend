@@ -28,20 +28,16 @@ public class UserStory {
     @JoinColumn(name = "id_conversation_session")
     private ConversationSession conversationSession;
 
-    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory")
-    @JoinColumn(name = "id_spec_sdd")
+    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
     private SpecSdd spec;
 
-    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory")
-    @JoinColumn(name = "id_plan_sdd")
+    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
     private PlanSdd plan;
 
-    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory")
-    @JoinColumn(name = "id_task_sdd")
+    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
     private TaskSdd task;
 
-    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory")
-    @JoinColumn(name = "id_impl_sdd")
+    @OneToOne(fetch = FetchType.EAGER, mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
     private ImplSdd impl;
 
 
