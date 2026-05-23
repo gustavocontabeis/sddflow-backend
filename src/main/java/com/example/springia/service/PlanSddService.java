@@ -6,6 +6,7 @@ import com.example.springia.repository.PlanSddRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,9 +52,17 @@ public class PlanSddService {
         });
     }
 
+    @Transactional
     public void delete(Long id) {
         log.info("[SERVICE] delete PlanSdd id={}", id);
-        planSddRepository.deleteById(id);
+        planSddRepository.findById(id).ifPresent(planSdd -> {
+            if (planSdd.getUserStory() != null) {
+                // Break bidirectional association before removing child.
+                planSdd.getUserStory().setPlan(null);
+                planSdd.setUserStory(null);
+            }
+            planSddRepository.delete(planSdd);
+        });
         log.info("[SERVICE] delete PlanSdd id={} completed", id);
     }
 }

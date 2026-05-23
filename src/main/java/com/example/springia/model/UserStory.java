@@ -24,7 +24,7 @@ public class UserStory {
     @Lob
     private String content;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.DETACH, orphanRemoval = false)
     @JoinColumn(name = "id_conversation_session")
     private ConversationSession conversationSession;
 

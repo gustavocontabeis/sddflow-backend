@@ -6,6 +6,7 @@ import com.example.springia.repository.TaskSddRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,9 +52,17 @@ public class TaskSddService {
         });
     }
 
+    @Transactional
     public void delete(Long id) {
         log.info("[SERVICE] delete TaskSdd id={}", id);
-        taskSddRepository.deleteById(id);
+        taskSddRepository.findById(id).ifPresent(taskSdd -> {
+            // Break bidirectional relationship before deleting
+            if (taskSdd.getUserStory() != null) {
+                taskSdd.getUserStory().setTask(null);
+                taskSdd.setUserStory(null);
+            }
+            taskSddRepository.deleteById(id);
+        });
         log.info("[SERVICE] delete TaskSdd id={} completed", id);
     }
 }

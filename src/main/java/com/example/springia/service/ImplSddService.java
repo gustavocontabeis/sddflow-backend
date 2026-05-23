@@ -6,6 +6,7 @@ import com.example.springia.repository.ImplSddRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,9 +52,17 @@ public class ImplSddService {
         });
     }
 
+    @Transactional
     public void delete(Long id) {
         log.info("[SERVICE] delete ImplSdd id={}", id);
-        implSddRepository.deleteById(id);
+        implSddRepository.findById(id).ifPresent(implSdd -> {
+            if (implSdd.getUserStory() != null) {
+                // Break bidirectional association before removing child.
+                implSdd.getUserStory().setImpl(null);
+                implSdd.setUserStory(null);
+            }
+            implSddRepository.deleteById(id);
+        });
         log.info("[SERVICE] delete ImplSdd id={} completed", id);
     }
 }

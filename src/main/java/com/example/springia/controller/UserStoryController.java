@@ -7,6 +7,7 @@ import com.example.springia.repository.UserStoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -122,11 +123,16 @@ public class UserStoryController {
      * }</pre>
      */
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         log.info("[API] DELETE /user-stories/{}", id);
         return userStoryRepository.findById(id)
                 .map(existing -> {
-                    userStoryRepository.deleteById(id);
+                    if (existing.getConversationSession() != null) {
+                        existing.getConversationSession().setUserStory(null);
+                        existing.setConversationSession(null);
+                    }
+                    userStoryRepository.delete(existing);
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
