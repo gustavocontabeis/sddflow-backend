@@ -1,7 +1,6 @@
 package com.example.springia.service;
 
 import com.example.springia.model.*;
-import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.UserStoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +73,7 @@ public class SddService {
 
         String plan = chatService.chat(prompt);
 
-        planSddService.save(PlanSdd.builder().status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(plan).build());
+        planSddService.savePlan(userStory, plan);
 
         log.info("PLAN gerada e salva com sucesso para userStoryId={}, specLength={}", userStoryId, plan.length());
 
@@ -101,7 +100,7 @@ public class SddService {
 
         String content = chatService.chat(prompt);
 
-        taskSddService.save(TaskSdd.builder().status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
+        taskSddService.saveTask(userStory, content);
 
         log.info("TASK gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
 

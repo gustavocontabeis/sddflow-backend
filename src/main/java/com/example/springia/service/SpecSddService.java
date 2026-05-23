@@ -47,6 +47,14 @@ public class SpecSddService {
                 userStory != null ? userStory.getId() : null,
                 content != null ? content.length() : 0);
 
+        SpecSdd existing = specSddRepository.findByUserStory_Id(userStory.getId()).orElse(null);
+        if (existing != null) {
+            log.info("[SERVICE] saveSpec updating existing SpecSdd id={}", existing.getId());
+            existing.setContent(content);
+            existing.setStatus(SpecificationDocumentStatus.IN_PROGRESS);
+            return specSddRepository.save(existing);
+        }
+
         SpecSdd specSdd = SpecSdd.builder()
                 .userStory(userStory)
                 .content(content)

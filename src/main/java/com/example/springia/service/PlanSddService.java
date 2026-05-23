@@ -1,6 +1,7 @@
 package com.example.springia.service;
 
 import com.example.springia.model.PlanSdd;
+import com.example.springia.model.UserStory;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.PlanSddRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,27 @@ public class PlanSddService {
         PlanSdd saved = planSddRepository.save(planSdd);
         log.info("[SERVICE] save PlanSdd persistedId={}", saved.getId());
         return saved;
+    }
+
+    public PlanSdd savePlan(UserStory userStory, String content) {
+        log.info("[SERVICE] savePlan userStoryId={} contentLength={}",
+                userStory != null ? userStory.getId() : null,
+                content != null ? content.length() : 0);
+
+        PlanSdd existing = planSddRepository.findByUserStoryId(userStory.getId()).orElse(null);
+        if (existing != null) {
+            log.info("[SERVICE] savePlan updating existing PlanSdd id={}", existing.getId());
+            existing.setContent(content);
+            existing.setStatus(SpecificationDocumentStatus.IN_PROGRESS);
+            return planSddRepository.save(existing);
+        }
+
+        PlanSdd planSdd = PlanSdd.builder()
+                .userStory(userStory)
+                .content(content)
+                .status(SpecificationDocumentStatus.IN_PROGRESS)
+                .build();
+        return save(planSdd);
     }
 
     public Optional<PlanSdd> approve(Long id) {

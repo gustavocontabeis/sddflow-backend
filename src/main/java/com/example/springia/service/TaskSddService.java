@@ -1,6 +1,7 @@
 package com.example.springia.service;
 
 import com.example.springia.model.TaskSdd;
+import com.example.springia.model.UserStory;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.TaskSddRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,27 @@ public class TaskSddService {
         TaskSdd saved = taskSddRepository.save(taskSdd);
         log.info("[SERVICE] save TaskSdd persistedId={}", saved.getId());
         return saved;
+    }
+
+    public TaskSdd saveTask(UserStory userStory, String content) {
+        log.info("[SERVICE] saveTask userStoryId={} contentLength={}",
+                userStory != null ? userStory.getId() : null,
+                content != null ? content.length() : 0);
+
+        TaskSdd existing = taskSddRepository.findByUserStory_Id(userStory.getId()).orElse(null);
+        if (existing != null) {
+            log.info("[SERVICE] saveTask updating existing TaskSdd id={}", existing.getId());
+            existing.setContent(content);
+            existing.setStatus(SpecificationDocumentStatus.IN_PROGRESS);
+            return taskSddRepository.save(existing);
+        }
+
+        TaskSdd taskSdd = TaskSdd.builder()
+                .userStory(userStory)
+                .content(content)
+                .status(SpecificationDocumentStatus.IN_PROGRESS)
+                .build();
+        return save(taskSdd);
     }
 
     public Optional<TaskSdd> approve(Long id) {

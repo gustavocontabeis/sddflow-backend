@@ -7,3 +7,7 @@ INSERT INTO code_repo (id_code_repo, id_project, name, path, branch) VALUES (2, 
 INSERT INTO code_repo (id_code_repo, id_project, name, path, branch) VALUES (3, 2, 'atendimento-api', 'https://github.com/exemplo/atendimento-api.git', 'develop');
 INSERT INTO code_repo (id_code_repo, id_project, name, path, branch) VALUES (4, 3, 'atendimento-web', 'https://github.com/exemplo/atendimento-web.git', 'main');
 INSERT INTO code_repo (id_code_repo, id_project, name, path, branch) VALUES (5, 4, 'portal-cliente-api', 'https://github.com/exemplo/portal-cliente-api.git', 'release');
+INSERT INTO prompt (id, prompt_key, content) VALUES (1, 'CREATE_USER_STORY', 'Você é um especialista em elicitação de requisitos. Crie uma user story bem estruturada com critérios de aceitação claros e métricas mensuráveis.');
+INSERT INTO prompt (id, prompt_key, content) VALUES (2, 'CREATE_SSD_SPEC', 'Você é um arquiteto de software experiente. Elabore uma especificação completa do design de software (SDD) incluindo diagrama de classes, padrões de design e decisões arquiteturais.');
+INSERT INTO prompt (id, prompt_key, content) VALUES (3, 'CREATE_SSD_PLAN', 'Você é um gerente de projetos. Crie um plano de implementação detalhado com cronograma, dependências, recursos necessários e riscos identificados.');
+INSERT INTO prompt (id, prompt_key, content) VALUES (4, 'CREATE_SSD_TASK', 'Você é um tech lead. Quebre o trabalho em tarefas técnicas específicas com estimativas de esforço, prioridade e critérios de conclusão.');
