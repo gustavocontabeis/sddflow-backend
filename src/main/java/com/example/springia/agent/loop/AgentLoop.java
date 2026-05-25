@@ -126,17 +126,22 @@ public class AgentLoop {
         
         INSTRUÇÕES:
         1. ANTES de executar qualquer ação, PENSE sobre o que precisa ser feito
-        2. Use uma ferramenta (tool) para executar a ação
-        3. OBSERVE o resultado
+        2. Use UMA ferramenta (tool) para executar a ação
+        3. AGUARDE a observação do resultado antes de prosseguir
         4. DECIDA se precisa de mais ações ou se pode FINALIZAR
         5. Quando terminar, responda com "Finalizar: [resposta_final]"
         
-        FORMATO DE RESPOSTA:
+        !! CRÍTICO: Responda com APENAS UMA ação por vez.
+        !! Nunca inclua múltiplas ações na mesma resposta.
+        !! Nunca coloque "Finalizar:" na mesma resposta que uma "Ação:".
+        !! Execute uma ferramenta, aguarde o resultado, depois decida o próximo passo.
+        
+        FORMATO DE RESPOSTA (para executar uma ação):
         Pensamento: [Seu raciocínio sobre o que fazer]
         Ação: [Nome da tool]
         Parâmetros: [JSON com os parâmetros da tool]
         
-        Quando terminar:
+        FORMATO DE RESPOSTA (quando terminar todas as ações):
         Pensamento: [Análise final]
         Finalizar: [Resposta resumida do que foi feito]
         
@@ -170,7 +175,19 @@ public class AgentLoop {
         String thinking = extractSection(response, "Pensamento:");
         builder.thinking(thinking);
 
-        // Só considera finalização quando "Finalizar:" aparece no início de uma linha.
+        // Tool calls têm prioridade: se o LLM incluiu ações na resposta,
+        // execute-as primeiro. "Finalizar:" só é processado quando não há
+        // nenhuma ação pendente, evitando que o agent finalize sem executar
+        // as ferramentas que listou.
+        List<ToolCall> toolCalls = extractToolCalls(response);
+        if (!toolCalls.isEmpty()) {
+            ToolCall first = toolCalls.getFirst();
+            builder.toolName(first.name());
+            builder.toolParams(first.params());
+            return builder.build();
+        }
+
+        // Só considera finalização quando não há tool calls na resposta.
         String finalAnswer = extractFinalAnswer(response);
         if (finalAnswer != null && !finalAnswer.isBlank()) {
             builder.isFinal(true);
@@ -178,19 +195,12 @@ public class AgentLoop {
             return builder.build();
         }
 
-        List<ToolCall> toolCalls = extractToolCalls(response);
-        if (!toolCalls.isEmpty()) {
-            ToolCall first = toolCalls.getFirst();
-            builder.toolName(first.name());
-            builder.toolParams(first.params());
-        } else {
-            // Fallback para manter compatibilidade com respostas fora do formato ideal.
-            String action = extractSection(response, "Ação:");
-            builder.toolName(action);
-            String paramsStr = extractSection(response, "Parâmetros:");
-            Map<String, String> params = parseParameters(paramsStr);
-            builder.toolParams(params);
-        }
+        // Fallback para manter compatibilidade com respostas fora do formato ideal.
+        String action = extractSection(response, "Ação:");
+        builder.toolName(action);
+        String paramsStr = extractSection(response, "Parâmetros:");
+        Map<String, String> params = parseParameters(paramsStr);
+        builder.toolParams(params);
 
         return builder.build();
     }
