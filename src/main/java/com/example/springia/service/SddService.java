@@ -109,7 +109,29 @@ public class SddService {
 
     public String createImpl(Long userStoryId) {
         log.info("Iniciando geracao de IMPL para userStoryId={}", userStoryId);
-        return generateFromUserStory(userStoryId, "Crie um guia de implementacao em Markdown com arquitetura sugerida, passos de codificacao, validacoes e estrategia de testes.");
+
+        UserStory userStory = userStoryRepository.findById(userStoryId)
+                .orElseThrow(() -> new IllegalArgumentException("UserStory nao encontrada: " + userStoryId));
+
+        String prompt = promptService.findByKey("CREATE_SSD_IMPL").orElse(null).getContent();
+
+        ConversationSession conversationSession = userStory.getConversationSession();
+        String projectConstitution = conversationSession.getProject().getConstitution();
+
+        prompt = prompt
+                .replace("{{CONSTITUTION}}", projectConstitution)
+                .replace("{{SDD_SPEC}}", userStory.getSpec().getContent())
+                .replace("{{SDD_TASK}}", userStory.getPlan().getContent());
+
+        log.info("TASK promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
+
+        String content = chatService.chat(prompt);
+
+        taskSddService.saveTask(userStory, content);
+
+        log.info("TASK gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
+
+        return content;
     }
 
     private String generateFromUserStory(Long userStoryId, String instruction) {
