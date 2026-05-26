@@ -146,6 +146,81 @@ public class SddTaskExecutorService {
     }
 
     /**
+     * Executa uma implementação via ImplSdd ID
+     * Usa o documento Impl.md como guia principal para criação dos arquivos
+     */
+    public AgentExecution executeByImpl(Long implId) throws Exception {
+        log.info("[SDD_TASK_EXECUTOR] Iniciando execução de implementação id={}", implId);
+
+        ImplSdd implSdd = implSddService.findById(implId)
+                .orElseThrow(() -> new IllegalArgumentException("ImplSdd não encontrada: " + implId));
+
+        if (implSdd.getContent() == null || implSdd.getContent().isBlank()) {
+            throw new IllegalArgumentException("ImplSdd sem conteúdo para execução");
+        }
+
+        UserStory userStory = implSdd.getUserStory();
+        if (userStory == null) {
+            throw new IllegalArgumentException("ImplSdd sem UserStory associada");
+        }
+
+        String context = buildImplExecutionContext(userStory, implSdd);
+        log.info("[SDD_TASK_EXECUTOR] Contexto de implementação montado: {} bytes", context.length());
+
+        AgentExecution execution = executorAgentService.executeTask(context);
+        log.info("[SDD_TASK_EXECUTOR] Execução de implementação concluída: {} - {} passos",
+                execution.getStatus(), execution.getStepCount());
+
+        return execution;
+    }
+
+    /**
+     * Monta contexto para executar o documento de implementação (Impl.md)
+     */
+    private String buildImplExecutionContext(UserStory userStory, ImplSdd implSdd) {
+        StringBuilder context = new StringBuilder();
+
+        context.append("# CONTEXTO DE EXECUÇÃO DO SDD (IMPLEMENTAÇÃO)\n\n");
+
+        if (userStory.getContent() != null) {
+            context.append("## USER STORY\n\n");
+            context.append(userStory.getContent()).append("\n\n");
+        }
+
+        if (userStory.getSpec() != null && userStory.getSpec().getContent() != null) {
+            context.append("## ESPECIFICAÇÃO (Spec.md)\n\n");
+            context.append(userStory.getSpec().getContent()).append("\n\n");
+        }
+
+        if (userStory.getPlan() != null && userStory.getPlan().getContent() != null) {
+            context.append("## PLANO (Plan.md)\n\n");
+            context.append(userStory.getPlan().getContent()).append("\n\n");
+        }
+
+        if (userStory.getTask() != null && userStory.getTask().getContent() != null) {
+            context.append("## TAREFAS (Task.md)\n\n");
+            context.append(userStory.getTask().getContent()).append("\n\n");
+        }
+
+        context.append("## IMPLEMENTAÇÃO A EXECUTAR (Impl.md)\n\n");
+        context.append(implSdd.getContent()).append("\n\n");
+
+        context.append("""
+        # INSTRUÇÕES PARA EXECUÇÃO
+
+        1. Use a seção "IMPLEMENTAÇÃO A EXECUTAR (Impl.md)" como fonte principal.
+        2. Crie os arquivos e diretórios exatamente como descritos.
+        3. Quando houver conteúdo de arquivo, grave o conteúdo completo.
+        4. Se necessário, consulte Spec/Plan/Task apenas para contexto adicional.
+        5. Ao final, valide os arquivos criados e termine com "Finalizar: [Resumo do que foi feito]".
+
+        Inicie a implementação agora.
+        """);
+
+        return context.toString();
+    }
+
+    /**
      * Simula a execução sem realmente executar (apenas prepara o contexto)
      */
     public String previewExecutionContext(Long taskSddId) {

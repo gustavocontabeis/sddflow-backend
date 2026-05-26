@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
  * Endpoints:
  * - POST /sdd-executor/execute-task/{taskId}: Executa TaskSdd com contexto (Spec+Plan+Task)
  * - POST /sdd-executor/execute-userstory/{userStoryId}: Executa tarefa associada à UserStory
+ * - POST /sdd-executor/execute-impl/{implId}: Executa implementação associada ao ImplSdd
  * - GET /sdd-executor/preview/{taskId}: Preview do contexto de execução (sem executar)
  */
 @Slf4j
@@ -102,6 +103,44 @@ public class SddTaskExecutorController {
                             .build());
         } catch (Exception e) {
             log.error("[SDD_EXECUTOR_CONTROLLER] Erro ao executar UserStory {}", userStoryId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ExecutorAgentResponse.builder()
+                            .status("ERROR")
+                            .errorMessage(e.getMessage())
+                            .build());
+        }
+    }
+
+    /**
+     * Executa a implementação associada a um ImplSdd
+     *
+     * <p>Exemplo de execução:</p>
+     * <pre>{@code
+     * curl -X POST http://localhost:8080/sdd-executor/execute-impl/1
+     * }</pre>
+     */
+    @PostMapping("/execute-impl/{implId}")
+    public ResponseEntity<ExecutorAgentResponse> executeByImpl(@PathVariable Long implId) {
+        log.info("[SDD_EXECUTOR_CONTROLLER] POST /execute-impl/{}", implId);
+
+        try {
+            AgentExecution execution = sddTaskExecutorService.executeByImpl(implId);
+            ExecutorAgentResponse response = mapExecutionToResponse(execution);
+
+            log.info("[SDD_EXECUTOR_CONTROLLER] ImplSdd {} executada: {} - {} passos",
+                    implId, execution.getStatus(), execution.getStepCount());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.error("[SDD_EXECUTOR_CONTROLLER] Erro de validação ao executar impl {}", implId, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ExecutorAgentResponse.builder()
+                            .status("ERROR")
+                            .errorMessage(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            log.error("[SDD_EXECUTOR_CONTROLLER] Erro ao executar impl {}", implId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ExecutorAgentResponse.builder()
                             .status("ERROR")

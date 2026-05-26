@@ -50,7 +50,7 @@ public class CreateFileTool implements Tool {
 
         String fullPath = basePath + "/" + filePath;
         var path = Paths.get(fullPath);
-        log.info("[GUSTAVO] criando arquivo: {}", filePath);
+
         // Cria diretórios pais se não existirem
         Files.createDirectories(path.getParent());
 

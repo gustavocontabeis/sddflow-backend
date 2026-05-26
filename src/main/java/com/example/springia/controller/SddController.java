@@ -1,11 +1,16 @@
 package com.example.springia.controller;
 
+import com.example.springia.dto.PromptAuditRequest;
+import com.example.springia.dto.PromptAuditResponse;
 import com.example.springia.service.SddService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -27,8 +32,7 @@ public class SddController {
      @PostMapping("/{userStoryId}/spec")
      public String createSpec(@PathVariable Long userStoryId) {
         log.info("[API] POST /sdd/{}/spec", userStoryId);
-         String spec = sddService.createSpec(userStoryId);
-         return spec;
+         return sddService.createSpec(userStoryId);
     }
 
     /**
@@ -72,5 +76,22 @@ public class SddController {
         log.info("[API] POST /sdd/{}/impl", userStoryId);
         return sddService.createImpl(userStoryId);
     }
+
+      /**
+       * Faz uma auditoria dos prompts da user story para descobrir qual fonte gerou uma instrução.
+       *
+       * <p>Exemplo de execucao:</p>
+       * <pre>{@code
+       * curl -X POST http://localhost:8080/sdd/1/prompt-audit \
+       *   -H "Content-Type: application/json" \
+       *   -d '{"question":"por que a classe TarefaRepository foi criada com spring boot se a contitution diz que é quarkus?"}'
+       * }</pre>
+       */
+      @PostMapping("/{userStoryId}/prompt-audit")
+      public ResponseEntity<PromptAuditResponse> analyzePrompt(@PathVariable Long userStoryId,
+                                                               @Valid @RequestBody PromptAuditRequest request) {
+          log.info("[API] POST /sdd/{}/prompt-audit questionLength={}", userStoryId, request.question() != null ? request.question().length() : 0);
+          return ResponseEntity.ok(sddService.analyzePrompt(userStoryId, request.question()));
+      }
 
 }
