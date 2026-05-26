@@ -1,6 +1,7 @@
 package com.example.springia.service;
 
 import com.example.springia.model.*;
+import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.UserStoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,9 @@ public class SddService {
 
     @Autowired
     private TaskSddService taskSddService;
+
+    @Autowired
+    private ImplSddService implSddService;
 
     @Autowired
     private PromptService promptService;
@@ -121,15 +125,16 @@ public class SddService {
         prompt = prompt
                 .replace("{{CONSTITUTION}}", projectConstitution)
                 .replace("{{SDD_SPEC}}", userStory.getSpec().getContent())
-                .replace("{{SDD_TASK}}", userStory.getPlan().getContent());
+                .replace("{{SDD_PLAN}}", userStory.getPlan().getContent())
+                .replace("{{SDD_TASK}}", userStory.getTask().getContent());
 
-        log.info("TASK promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
+        log.info("IMPL promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
 
         String content = chatService.chat(prompt);
 
-        taskSddService.saveTask(userStory, content);
+        implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
 
-        log.info("TASK gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
+        log.info("IMPL gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
 
         return content;
     }

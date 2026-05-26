@@ -38,8 +38,8 @@ public class ExecutorAgentController {
      * curl -X POST http://localhost:8080/executor-agent/execute \
      *   -H "Content-Type: application/json" \
      *   -d '{
-     *     "taskDescription": "Crie um arquivo teste.txt em src/test com conteúdo Hello World",
-     *     "basePath": "/home/gustavo/dev/teste-spring-ia/springia"
+     *     "taskDescription": "Crie arquivos de teste-01.txt a teste-10.txt em clone-repo com conteúdo Hello World",
+     *     "basePath": "springia-workspace"
      *   }'
      * }</pre>
      */
@@ -49,10 +49,8 @@ public class ExecutorAgentController {
             request.getTaskDescription() != null ? request.getTaskDescription().length() : 0);
 
         try {
-            // Define base path se fornecido
-            if (request.getBasePath() != null && !request.getBasePath().isBlank()) {
-                executorAgentService.setBasePath(request.getBasePath());
-            }
+            // basePath é lido do JSON e resolvido como subdiretório do temp do sistema.
+            executorAgentService.setBasePath(request.getBasePath());
 
             // Executa o agent
             AgentExecution execution = executorAgentService.executeTask(request.getTaskDescription());
@@ -80,13 +78,19 @@ public class ExecutorAgentController {
      *
      * <p>Exemplo de execução:</p>
      * <pre>{@code
-     * curl -X POST http://localhost:8080/executor-agent/execute-task/1
+     * curl -X POST http://localhost:8080/executor-agent/execute-task/1 \
+     *   -H "Content-Type: application/json" \
+     *   -d '{
+     *     "basePath": "springia-workspace"
+     *   }'
      * }</pre>
      */
     @PostMapping("/execute-task/{taskId}")
     public ResponseEntity<ExecutorAgentResponse> executeTask(
             @PathVariable Long taskId,
-            @RequestParam(required = false) String basePath) {
+            @RequestBody(required = false) ExecutorAgentRequest request) {
+
+        String basePath = request != null ? request.getBasePath() : null;
 
         log.info("[AGENT_CONTROLLER] POST /execute-task/{} basePath={}", taskId, basePath);
 
@@ -98,10 +102,8 @@ public class ExecutorAgentController {
             String taskContent = taskSdd.getContent();
             log.info("[AGENT_CONTROLLER] TaskSdd encontrada: {} bytes", taskContent.length());
 
-            // Define base path se fornecido
-            if (basePath != null && !basePath.isBlank()) {
-                executorAgentService.setBasePath(basePath);
-            }
+            // basePath é lido do JSON e resolvido como subdiretório do temp do sistema.
+            executorAgentService.setBasePath(basePath);
 
             // Executa o agent com o conteúdo da tarefa
             AgentExecution execution = executorAgentService.executeTask(taskContent);

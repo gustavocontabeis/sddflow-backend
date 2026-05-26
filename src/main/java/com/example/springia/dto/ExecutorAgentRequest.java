@@ -21,8 +21,8 @@ public class ExecutorAgentRequest {
     private String taskDescription;
 
     /**
-     * Caminho base opcional para operações do filesystem
-     * Se não informado, usa o diretório do projeto
+     * Subdiretório opcional dentro do diretório temporário do sistema operacional.
+     * Se vier vazio ou ausente, usa a raiz do diretório temporário.
      */
     private String basePath;
 
