@@ -22,7 +22,6 @@ public class DiscoveryController {
 
     private final DiscoveryService discoveryService;
 
-
     /**
      * Executa a descoberta no repositório informado.
      *
@@ -36,6 +35,8 @@ public class DiscoveryController {
         log.info("[API] GET /discovery");
         return discoveryService.dicovery(Path.of(repositoryPath));
     }
+
+
 
 }
 

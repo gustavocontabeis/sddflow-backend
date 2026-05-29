@@ -1,6 +1,8 @@
 package com.example.springia.service;
 
+import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
+import com.example.springia.utils.FileUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -11,16 +13,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 @Service
 public class DiscoveryService {
 
-    private static final Set<String> IGNORED_DIRECTORIES = Set.of(".git", "target", "node_modules", "dist");
+    public static final Set<String> IGNORED_DIRECTORIES = Set.of(".git", "target", "node_modules", "dist");
 
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
@@ -34,7 +39,7 @@ public class DiscoveryService {
 
     public String dicovery(Path path){
 
-        List<String> strings = listarArquivos(path);
+        List<String> strings = FileUtils.listFilesNames(path);
         for (String string : strings) {
             log.info("{}", string);
         }
@@ -42,19 +47,17 @@ public class DiscoveryService {
         DiscoveryDirsDTO discoveryDirs = dadosDeDiretorios(strings);
         log.info("{}", discoveryDirs);
 
-        String conteudoArquivosConfiguracao = lerConteudoArquivos(discoveryDirs.getArquivosConfiguracao());
+        String conteudoArquivosConfiguracao = FileUtils.joinFileContents(discoveryDirs.getArquivosConfiguracao());
         log.info("{}", conteudoArquivosConfiguracao);
 
-        String configuracoesJson = buscarConfiguracoes(conteudoArquivosConfiguracao);
-        log.info("{}", configuracoesJson);
-
+        DiscoveryDTO configuracoes = buscarConfiguracoes(conteudoArquivosConfiguracao);
+        log.info("{}", configuracoes);
 
         StringBuilder sb = new StringBuilder();
         for (String pathFile : discoveryDirs.getPacotesDeDominio()) {
             List<String> stringss = listarArquivos(Paths.get(pathFile));
             sb.append(lerConteudoArquivos(stringss.toArray(new String[0])));
         }
-
 
         String conteudoArquivosDeDominio = lerConteudoArquivos(discoveryDirs.getPacotesDeDominio());
         log.info("{}", conteudoArquivosDeDominio);
@@ -85,7 +88,7 @@ public class DiscoveryService {
         return content;
     }
 
-    private String buscarConfiguracoes(String conteudoArquivosConfiguracao) {
+    private DiscoveryDTO buscarConfiguracoes(String conteudoArquivosConfiguracao) {
         String prompt = String.format("""
                 Voce e um arquiteto de software senior.
                 Esse é o conteúdo dos arquivos de configuração do sistema.
@@ -98,7 +101,7 @@ public class DiscoveryService {
                 retornar nesta estrutura em JSON conforme exemplo:
                 {
                   "linguagem":"java",
-                  "frameworksBibliotecas:[""]
+                  "frameworksBibliotecas":[""]
                   "conexoesComBancoDeDados":[{}]
                   "integracoesComOutrosSistemas":[{}]
                   "arquivosConfiguracao":[""]
@@ -113,7 +116,18 @@ public class DiscoveryService {
                 .content();
 
         log.info("{}", content);
-        return content;
+
+        if (content == null || content.isBlank()) {
+            throw new IllegalStateException("Resposta vazia do modelo para ConfiguracoesDiscobertasDTO");
+        }
+
+        String json = extractJsonObject(content);
+
+        try {
+            return objectMapper.readValue(json, DiscoveryDTO.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Falha ao converter resposta em ConfiguracoesDiscobertasDTO. Resposta: " + content, e);
+        }
     }
 
     // Consolida o conteudo dos arquivos em uma unica string para o proximo processamento.

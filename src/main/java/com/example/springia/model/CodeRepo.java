@@ -23,6 +23,8 @@ public class CodeRepo {
     private String name;
     private String path;
     private String branch;
+    @Lob
+    private String constitution;
     @Enumerated(EnumType.STRING)
     private CodeRepoType type;
     @JsonIgnore
