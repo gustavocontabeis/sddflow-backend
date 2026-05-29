@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class FileUtils {
 
-    private static final Set<String> IGNORED_DIRECTORIES = Set.of(".git", "target", "node_modules", "dist");
+    private static final Set<String> IGNORED_DIRECTORIES = Set.of(".idea", "test", "target", "node_modules", "dist");
 
     public static List<String> listFilesNames(Path path){
         if (path == null) {

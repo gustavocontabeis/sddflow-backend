@@ -16,5 +16,6 @@ public class DiscoveryDirsDTO {
     private String[] pacotesRegrasNegocio;
     private String[] pacotesEndpointsRest;
     private String[] arquivosConfiguracao;
+    private String descricaoEstruturaDiretorios;
 
 }

@@ -3,19 +3,23 @@ package com.example.springia.controller;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.enums.CodeRepoType;
 import com.example.springia.service.CodeRepoService;
+import com.example.springia.service.DiscoveryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/coderepos")
 @RequiredArgsConstructor
 public class CodeRepoController {
+
     private final CodeRepoService codeRepoService;
 
     /**
@@ -89,22 +93,15 @@ public class CodeRepoController {
      * <pre>{@code
      * curl -X PATCH http://localhost:8080/api/coderepos/update-constitution/1 \
      *   -H "Content-Type: application/json" \
-     *   -d '{"name":"novo-nome","branch":"feature"}'
      * }</pre>
      */
     @PatchMapping("/update-constitution/{id}")
-    public ResponseEntity<CodeRepo> updateConstitution(@PathVariable Long id, @RequestBody CodeRepo codeRepo) {
-        return codeRepoService.findById(id)
-                .map(existing -> {
-                    if (codeRepo.getName() != null) existing.setName(codeRepo.getName());
-                    if (codeRepo.getPath() != null) existing.setPath(codeRepo.getPath());
-                    if (codeRepo.getBranch() != null) existing.setBranch(codeRepo.getBranch());
-                    if (codeRepo.getType() != null) existing.setType(codeRepo.getType());
-                    if (codeRepo.getProject() != null) existing.setProject(codeRepo.getProject());
-                    existing.setId(id);
-                    return ResponseEntity.ok(codeRepoService.save(existing));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<CodeRepo> updateConstitution(@PathVariable Long id) {
+        CodeRepo codeRepo = codeRepoService.updateConstitution(id);
+        if(codeRepo != null){
+            return ResponseEntity.ok(codeRepo);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     /**
