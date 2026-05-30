@@ -17,6 +17,7 @@ public class ConversationSummaryResponse {
     private Long planId;
     private Long taskId;
     private Long implId;
+    private Long projectId;
     private String projectSigla;
     private String name;
     private SpecificationDocumentStatus status;

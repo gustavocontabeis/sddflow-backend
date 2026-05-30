@@ -67,6 +67,7 @@ public class ConversationController {
                         c.getUserStory() != null && c.getUserStory().getPlan() != null ? c.getUserStory().getPlan().getId() : null,
                         c.getUserStory() != null && c.getUserStory().getTask() != null ? c.getUserStory().getTask().getId() : null,
                         c.getUserStory() != null && c.getUserStory().getImpl() != null ? c.getUserStory().getImpl().getId() : null,
+                        c.getProject() != null ? c.getProject().getId() : null,
                         c.getProject() != null ? c.getProject().getSigla() : null,
                         c.getName(),
                         c.getStatus(),
