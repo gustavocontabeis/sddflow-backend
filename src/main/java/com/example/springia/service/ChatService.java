@@ -1,5 +1,6 @@
 package com.example.springia.service;
 
+import com.example.springia.advisors.LogAdvisor;
 import com.example.springia.dto.CreateSessionRequest;
 import com.example.springia.model.ConversationSession;
 import com.example.springia.model.Message;
@@ -27,6 +28,7 @@ public class ChatService {
     private final SpecificationDocumentRepository specificationDocumentRepository;
     private final UserStoryRepository userStoryRepository;
     private final PromptRepository promptRepository;
+    private final LogAdvisor logAdvisor;
 
     public ChatService(
             ChatClient.Builder chatClientBuilder,
@@ -35,7 +37,8 @@ public class ChatService {
             ProjectRepository projectRepository,
             SpecificationDocumentRepository specificationDocumentRepository,
             UserStoryRepository userStoryRepository,
-            PromptRepository promptRepository
+            PromptRepository promptRepository,
+            LogAdvisor logAdvisor
     ) {
         this.chatClient = chatClientBuilder.build();
         this.conversationRepository = conversationRepository;
@@ -44,6 +47,7 @@ public class ChatService {
         this.specificationDocumentRepository = specificationDocumentRepository;
         this.userStoryRepository = userStoryRepository;
         this.promptRepository = promptRepository;
+        this.logAdvisor = logAdvisor;
     }
 
     public Message createSession(CreateSessionRequest request) {
@@ -71,22 +75,35 @@ public class ChatService {
         log.trace("[CHAT] Prompt montado sessao={} tamanho={}", effectiveSessionId, prompt.length());
         log.info("[CHAT] PROMPT: {}", prompt);
 
-        String response = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String response = callWithAdvisors(prompt, effectiveSessionId);
 
-        log.info("[CHAT] RESPONSE: {}", prompt);
+        if (response == null || response.isBlank()) {
+            response = "Nao foi possivel gerar uma resposta no momento.";
+        }
+
+        log.info("[CHAT] RESPONSE: {}", response);
         Message assistant = saveMessage(session, "ASSISTANT", response);
-        log.debug("[CHAT] Mensagem ASSISTANT salva sessao={} tamanho={}", effectiveSessionId, response != null ? response.length() : 0);
+        log.debug("[CHAT] Mensagem ASSISTANT salva sessao={} tamanho={}", effectiveSessionId, response.length());
         log.info("[CHAT] Processamento finalizado sessao={}", effectiveSessionId);
         assistant.setConversationSession(null);
         return assistant;
     }
 
     public String chat(String userInput) {
+        String response = callWithAdvisors(userInput, null);
+
+        if (response == null || response.isBlank()) {
+            return "Nao foi possivel gerar uma resposta no momento.";
+        }
+
+        return response;
+    }
+
+    private String callWithAdvisors(String input, Long sessionId) {
+        log.debug("[CHAT] Chamando modelo com advisors sessao={}", sessionId);
         return chatClient.prompt()
-                .user(userInput)
+                .advisors(logAdvisor)
+                .user(input)
                 .call()
                 .content();
     }
@@ -212,10 +229,7 @@ public class ChatService {
         %s
         """.formatted(session.getStatus(), historyText);
 
-        String generated = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String generated = callWithAdvisors(prompt, sessionId);
 
         if (generated == null || generated.isBlank()) {
             generated = "# Especificacao\n\nNao foi possivel gerar o documento.";
@@ -249,13 +263,22 @@ public class ChatService {
 
     public Message aprove(Long sessionId) {
 
-        Message message = messageRepository.findByLastMessage(sessionId).orElse(null);
+        Message message = messageRepository.findByLastMessage(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Nao ha mensagens na sessao: " + sessionId));
 
         ConversationSession conversationSession = message.getConversationSession();
+        if (conversationSession == null) {
+            throw new IllegalStateException("Mensagem sem sessao associada para sessaoId=" + sessionId);
+        }
         conversationSession.setStatus(SpecificationDocumentStatus.APPROVED);
         conversationRepository.save(conversationSession);
 
-        String prompt = promptRepository.findByKey("CREATE_USER_STORY").orElse(null).getContent();
+        String prompt = promptRepository.findByKey("CREATE_USER_STORY")
+                .orElseThrow(() -> new IllegalArgumentException("Prompt CREATE_USER_STORY nao encontrado"))
+                .getContent();
+        if (prompt == null || prompt.isBlank()) {
+            throw new IllegalStateException("Prompt CREATE_USER_STORY sem conteudo");
+        }
 
         String promptCompleto = prompt.concat(":\n\n\n")
                 .concat("---------------------------\n")
@@ -264,12 +287,13 @@ public class ChatService {
 
         log.info("[CHAT] prompt CREATE_USER_STORY [{}]: {} ", promptCompleto.length(), promptCompleto);
 
-        String response = chatClient.prompt()
-                .user(promptCompleto)
-                .call()
-                .content();
+        String response = callWithAdvisors(promptCompleto, sessionId);
 
-        log.info("[CHAT] conteudo da User Story: {} ", promptCompleto);
+        if (response == null || response.isBlank()) {
+            response = "Nao foi possivel gerar a User Story.";
+        }
+
+        log.info("[CHAT] conteudo da User Story: {} ", response);
 
         userStoryRepository.save(UserStory.builder()
                 .conversationSession(conversationSession)

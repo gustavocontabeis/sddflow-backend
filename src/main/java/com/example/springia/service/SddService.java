@@ -5,6 +5,7 @@ import com.example.springia.model.*;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.UserStoryRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,9 @@ public class SddService {
 
     @Autowired
     private ChatService chatService;
+
+    @Autowired
+    private ChatClient chatClient;
 
     @Autowired
     private UserStoryRepository userStoryRepository;
@@ -151,6 +155,12 @@ public class SddService {
         log.info("IMPL promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
 
         String content = chatService.chat(prompt);
+        String response = chatClient.prompt()
+                .advisors()//Aqui inclua um advisor
+                .user(prompt)
+                .call()
+                .content();
+
 
         implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
 
