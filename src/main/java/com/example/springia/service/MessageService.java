@@ -79,10 +79,14 @@ public class MessageService {
         AÇÃO:
         - Continue refinando a ideia
         - Faça perguntas objetivas
+        - faça no máximo 5 pergundas de cada vez.
         - Estruture melhor os requisitos em:
         ```markdown
           # Perguntas de refinamento
-          # Especificação Funcional do Sistema de Controle de Tarefas
+          
+            - Coloque apenas uma linha de espaço abaixo de cada pergunta para o usuário poder responder  
+          
+          # Especificação Funcional
           ## Objetivo
           ## Escopo
           ## Requisitos Funcionais

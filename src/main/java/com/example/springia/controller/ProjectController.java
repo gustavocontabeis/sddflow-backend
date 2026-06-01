@@ -2,6 +2,7 @@ package com.example.springia.controller;
 
 import com.example.springia.dto.ProjectCreateRequest;
 import com.example.springia.dto.ProjectResponse;
+import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
 import com.example.springia.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -60,5 +61,25 @@ public class ProjectController {
         projectService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Atualiza a estrutura do repositorio e salva em constitution.
+     *
+     * <p>Exemplo de uso:</p>
+     * <pre>{@code
+     * curl -X POST http://localhost:8080/api/projects/update-constitution-structure/1
+     * }</pre>
+     */
+    @PostMapping("/update-constitution-structure/{id}")
+    public ResponseEntity<Project> updateStructureInConstitution(@PathVariable Long id) {
+        Project project = projectService.updateStructureInConstitution(id);
+        if (project != null) {
+            return ResponseEntity.ok(project);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+
+
 }
 

@@ -26,6 +26,7 @@ public class ProjectCreateRequest {
         private String path;
         private String branch;
         private String name;
+        private String constitution;
         private CodeRepoType type;
     }
 }
