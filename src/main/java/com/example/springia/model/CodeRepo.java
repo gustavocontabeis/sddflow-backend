@@ -22,6 +22,7 @@ public class CodeRepo {
     private Long id;
     private String name;
     private String path;
+    private String url;
     private String branch;
     @Lob
     private String constitution;

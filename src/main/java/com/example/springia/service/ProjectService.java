@@ -60,6 +60,7 @@ public class ProjectService {
                         CodeRepo codeRepo = project.getRepos().stream().filter(s -> s.getId().equals(repoRequest.getId())).findFirst().orElse(null);
                         repo.setId(repoRequest.getId());
                         repo.setPath(repoRequest.getPath());
+                        repo.setUrl(repoRequest.getUrl());
                         repo.setType(repoRequest.getType());
                         repo.setBranch(repoRequest.getBranch());
                         repo.setName(repoRequest.getName());
@@ -116,18 +117,22 @@ public class ProjectService {
             constitutionsRepositorios.append("NOME DE REPOSITÓRIO: ");
             constitutionsRepositorios.append(repo.getName());
             constitutionsRepositorios.append("\n");
+            constitutionsRepositorios.append("URL DE REPOSITÓRIO: ");
+            constitutionsRepositorios.append(repo.getUrl());
+            constitutionsRepositorios.append("\n");
             constitutionsRepositorios.append("PATH DE REPOSITÓRIO: ");
             constitutionsRepositorios.append(repo.getPath());
             constitutionsRepositorios.append("\n");
             constitutionsRepositorios.append("CONTITUTION DO REPOSITÓRIO: ");
+            constitutionsRepositorios.append("\n");
             constitutionsRepositorios.append(repo.getConstitution());
             constitutionsRepositorios.append("\n");
         }
 
         String prompt = String.format("""
-                Voce e um arquiteto de software senior especializado em SDD Spec Driven Developement..
+                Voce é um arquiteto de software sênior especializado em SDD Spec Driven Developement.
                 Esta é a CONTITUTION DO PROJETO:
-                [%s].
+                [%s]
                 
                 Esta são as contitutions de CADA REPOSITÓRIO DESTE PROJETO:
                 [%s]
