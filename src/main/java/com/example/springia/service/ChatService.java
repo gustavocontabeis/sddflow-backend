@@ -83,7 +83,7 @@ public class ChatService {
 
         log.info("[CHAT] RESPONSE: {}", response);
         Message assistant = saveMessage(session, "ASSISTANT", response);
-        log.debug("[CHAT] Mensagem ASSISTANT salva sessao={} tamanho={}", effectiveSessionId, response.length());
+        log.debug("[CHAT] Mensagem ASSISTANT salva sessao={} tamanho={}", effectiveSessionId, response != null ? response.length() : 0);
         log.info("[CHAT] Processamento finalizado sessao={}", effectiveSessionId);
         assistant.setConversationSession(null);
         return assistant;
@@ -99,8 +99,12 @@ public class ChatService {
         return response;
     }
 
+    /**
+     * Método centralizado para chamadas ao modelo IA com os Advisors aplicados.
+     * Todos os fluxos de geração passam por aqui.
+     */
     private String callWithAdvisors(String input, Long sessionId) {
-        log.debug("[CHAT] Chamando modelo com advisors sessao={}", sessionId);
+        log.debug("[CHAT] callWithAdvisors sessao={}", sessionId);
         return chatClient.prompt()
                 .advisors(logAdvisor)
                 .user(input)

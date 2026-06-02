@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>springia</artifactId>
+	<artifactId>sddflow-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
 	<description/>
@@ -28,7 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<spring-ai.version>2.0.0-M6</spring-ai.version>
+		<spring-ai.version>2.0.0-M8</spring-ai.version>
 		<spring-cloud-azure.version>7.2.0</spring-cloud-azure.version>
 	</properties>
 	<dependencies>

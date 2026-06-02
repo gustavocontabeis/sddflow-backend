@@ -17,9 +17,6 @@ public class SddService {
     private ChatService chatService;
 
     @Autowired
-    private ChatClient chatClient;
-
-    @Autowired
     private UserStoryRepository userStoryRepository;
 
     @Autowired
@@ -155,12 +152,6 @@ public class SddService {
         log.info("IMPL promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
 
         String content = chatService.chat(prompt);
-        String response = chatClient.prompt()
-                .advisors()//Aqui inclua um advisor
-                .user(prompt)
-                .call()
-                .content();
-
 
         implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
 
