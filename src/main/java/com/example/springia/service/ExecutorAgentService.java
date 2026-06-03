@@ -38,7 +38,7 @@ public class ExecutorAgentService {
         registerTools();
 
         // Cria o agent loop com máximo de 15 passos
-        this.agentLoop = new AgentLoop(this.chatClient, this.toolRegistry, 15);
+        this.agentLoop = new AgentLoop(this.chatClient, this.toolRegistry, 30);
 
         log.info("[EXECUTOR_AGENT] Serviço inicializado com basePath: {}", basePath);
     }

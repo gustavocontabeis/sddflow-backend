@@ -128,8 +128,9 @@ public class ExecutorAgentController {
 
     /**
      * Retorna as ferramentas disponíveis para o agent
+     * curl -i http://localhost:8080/executor-agent/tools
      */
-    //@GetMapping("/tools")
+    @GetMapping("/tools")
     public ResponseEntity<String> getAvailableTools() {
         log.info("[AGENT_CONTROLLER] GET /tools");
         String toolsDescription = executorAgentService.getToolRegistry().getToolsDescription();

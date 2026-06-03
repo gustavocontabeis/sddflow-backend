@@ -1,4 +1,4 @@
-package com.example.springia.advisors;
+package com.example.springia.agent.advisors;
 
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;

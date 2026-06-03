@@ -1,6 +1,6 @@
 package com.example.springia.service;
 
-import com.example.springia.advisors.LogAdvisor;
+import com.example.springia.agent.advisors.LogAdvisor;
 import com.example.springia.dto.CreateSessionRequest;
 import com.example.springia.model.ConversationSession;
 import com.example.springia.model.Message;

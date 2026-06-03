@@ -30,7 +30,6 @@ Pronto para: compilar, testar, commitar
 ✅ 2  serviços
 ✅ 2  controllers (endpoints)
 ✅ 2  DTOs
-✅ 2  arquivos vazios já existentes (DiscoveryAgent, FilesAgent)
 ```
 
 ### Documentação (4 documentos)
@@ -45,13 +44,14 @@ Pronto para: compilar, testar, commitar
 
 ## 🎯 Endpoints Disponíveis
 
-| Endpoint | Método | Descrição |
-|----------|--------|-----------|
-| `/executor-agent/execute` | POST | Execute qualquer tarefa |
-| `/executor-agent/tools` | GET | Liste ferramentas disponíveis |
-| `/sdd-executor/execute-task/{id}` | POST | Execute TaskSdd com contexto |
-| `/sdd-executor/execute-userstory/{id}` | POST | Execute por UserStory |
-| `/sdd-executor/preview/{id}` | GET | Veja contexto sem executar |
+| Endpoint                               | Método | Descrição                     |
+|----------------------------------------|--------|-------------------------------|
+| `/executor-agent/execute`              | POST   | Execute qualquer tarefa       |
+| `/executor-agent/tools`                | GET    | Liste ferramentas disponíveis |
+| `/sdd-executor/execute-task/{id}`      | POST   | Execute TaskSdd com contexto  |
+| `/sdd-executor/execute-impl/{id}`      | POST   | Execute ImplSdd com contexto  |
+| `/sdd-executor/execute-userstory/{id}` | POST   | Execute por UserStory         |
+| `/sdd-executor/preview/{id}`           | GET    | Veja contexto sem executar    |
 
 ---
 
@@ -101,13 +101,13 @@ curl http://localhost:8080/executor-agent/tools
 
 ## 🔧 Ferramentas que o Agent Pode Usar
 
-| Ferramenta | O que faz | Exemplo |
-|-----------|----------|---------|
-| `create_file` | Cria arquivos | Criar classe Java, configs |
-| `read_file` | Lê arquivos | Validar conteúdo |
-| `create_directory` | Cria pastas | Estrutura de pacotes |
-| `execute_command` | Executa comando | mvn compile, npm install |
-| `list_files` | Lista arquivos | Verificar estrutura |
+| Ferramenta         | O que faz        | Exemplo                    |
+|--------------------|------------------|----------------------------|
+| `create_file`      | Cria arquivos    | Criar classe Java, configs |
+| `read_file`        | Lê arquivos      | Validar conteúdo           |
+| `create_directory` | Cria pastas      | Estrutura de pacotes       |
+| `execute_command`  | Executa comando  | mvn compile, npm install   |
+| `list_files`       | Lista arquivos   | Verificar estrutura        |
 
 ---
 
