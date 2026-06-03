@@ -34,7 +34,7 @@ public class UserStoryController {
      * curl -X GET http://localhost:8080/user-stories
      * }</pre>
      */
-    @GetMapping
+    //@GetMapping
     public List<UserStory> findAll() {
         log.info("[API] GET /user-stories");
         return userStoryRepository.findAllByOrderByGeneratedAtDesc().stream()
@@ -67,7 +67,7 @@ public class UserStoryController {
      * curl -X GET http://localhost:8080/user-stories/conversation/1
      * }</pre>
      */
-    @GetMapping("/conversation/{sessionId}")
+    //@GetMapping("/conversation/{sessionId}")
     public ResponseEntity<UserStory> findByConversationSessionId(@PathVariable Long sessionId) {
         log.info("[API] GET /user-stories/conversation/{}", sessionId);
         return userStoryRepository.findByConversationSessionId(sessionId)
@@ -84,7 +84,7 @@ public class UserStoryController {
      * curl -X GET http://localhost:8080/user-stories/status/IN_PROGRESS
      * }</pre>
      */
-    @GetMapping("/status/{status}")
+    //@GetMapping("/status/{status}")
     public List<UserStory> findByStatus(@PathVariable SpecificationDocumentStatus status) {
         log.info("[API] GET /user-stories/status/{}", status);
         return userStoryRepository.findByStatus(status).stream()

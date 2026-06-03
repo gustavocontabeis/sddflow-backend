@@ -26,14 +26,14 @@ public class ConversationController {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
 
-    @GetMapping
+    //@GetMapping
     public List<ConversationSession> listAll() {
         List<ConversationSession> allByOrderByCreatedAtDesc = conversationRepository.findAllByOrderByCreatedAtDesc();
         allByOrderByCreatedAtDesc.stream().forEach(a->a.getUserStory().setConversationSession(null));
         return allByOrderByCreatedAtDesc;
     }
 
-    @GetMapping("/{id}")
+    //@GetMapping("/{id}")
     public ResponseEntity<ConversationSession> getById(@PathVariable Long id) {
         return conversationRepository.findById(id)
                 .map(ResponseEntity::ok)

@@ -35,7 +35,7 @@ public class ImplSddController {
      * curl -X GET http://localhost:8080/impl-sdds
      * }</pre>
      */
-    @GetMapping
+    //@GetMapping
     public List<ImplSdd> findAll() {
         log.info("[API] GET /impl-sdds");
         return implSddService.findAll().stream()
@@ -70,7 +70,7 @@ public class ImplSddController {
      *   -d '{"userStory":{"id":1},"content":"Conteudo impl","status":"IN_PROGRESS"}'
      * }</pre>
      */
-    @PostMapping
+    //@PostMapping
     public ResponseEntity<ImplSdd> save(@RequestBody ImplSdd implSdd) {
         log.info("[API] POST /impl-sdds id={} userStoryId={}",
                 implSdd.getId(),

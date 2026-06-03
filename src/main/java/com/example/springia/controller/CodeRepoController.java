@@ -30,7 +30,7 @@ public class CodeRepoController {
      * curl -X GET http://localhost:8080/api/coderepos
      * }</pre>
      */
-    @GetMapping
+    //@GetMapping
     public ResponseEntity<List<CodeRepo>> findAll() {
         return ResponseEntity.ok(codeRepoService.findAll());
     }
@@ -60,7 +60,7 @@ public class CodeRepoController {
      *   -d '{"name":"repo1","path":"/caminho","branch":"main","type":"GIT","project":{"id":1}}'
      * }</pre>
      */
-    @PostMapping
+    //@PostMapping
     public ResponseEntity<CodeRepo> create(@RequestBody CodeRepo codeRepo) {
         CodeRepo saved = codeRepoService.save(codeRepo);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -76,7 +76,7 @@ public class CodeRepoController {
      *   -d '{"name":"repo1","path":"/novo-caminho","branch":"dev","type":"GIT","project":{"id":1}}'
      * }</pre>
      */
-    @PutMapping("/{id}")
+    //@PutMapping("/{id}")
     public ResponseEntity<CodeRepo> update(@PathVariable Long id, @RequestBody CodeRepo codeRepo) {
         if (!codeRepoService.findById(id).isPresent()) {
             return ResponseEntity.notFound().build();
@@ -112,7 +112,7 @@ public class CodeRepoController {
      * curl -X DELETE http://localhost:8080/api/coderepos/1
      * }</pre>
      */
-    @DeleteMapping("/{id}")
+    //@DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (!codeRepoService.findById(id).isPresent()) {
             return ResponseEntity.notFound().build();
@@ -129,7 +129,7 @@ public class CodeRepoController {
      * curl -X GET http://localhost:8080/api/coderepos/project/1
      * }</pre>
      */
-    @GetMapping("/project/{projectId}")
+    //@GetMapping("/project/{projectId}")
     public ResponseEntity<List<CodeRepo>> findByProjectId(@PathVariable Long projectId) {
         return ResponseEntity.ok(codeRepoService.findByProjectId(projectId));
     }
@@ -142,7 +142,7 @@ public class CodeRepoController {
      * curl -X GET http://localhost:8080/api/coderepos/project/1/type/GIT
      * }</pre>
      */
-    @GetMapping("/project/{projectId}/type/{type}")
+    //@GetMapping("/project/{projectId}/type/{type}")
     public ResponseEntity<List<CodeRepo>> findByProjectIdAndType(@PathVariable Long projectId, @PathVariable CodeRepoType type) {
         return ResponseEntity.ok(codeRepoService.findByProjectIdAndType(projectId, type));
     }
@@ -155,7 +155,7 @@ public class CodeRepoController {
      * curl -X GET http://localhost:8080/api/coderepos/project/1/name/repo1
      * }</pre>
      */
-    @GetMapping("/project/{projectId}/name/{name}")
+    //@GetMapping("/project/{projectId}/name/{name}")
     public ResponseEntity<CodeRepo> findByProjectIdAndName(@PathVariable Long projectId, @PathVariable String name) {
         return codeRepoService.findByProjectIdAndName(projectId, name)
                 .map(ResponseEntity::ok)

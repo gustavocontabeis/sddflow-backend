@@ -23,7 +23,7 @@ public class GitHubController {
      * @return
      * @throws Exception
      */
-    @GetMapping("/repos/{owner}")
+    //@GetMapping("/repos/{owner}")
     public ResponseEntity<ListRepositoriesResponse> listRepositories(@PathVariable String owner) throws Exception {
         return ResponseEntity.ok(githubService.listRepositories(owner));
     }
@@ -36,7 +36,7 @@ public class GitHubController {
      * @return
      * @throws Exception
      */
-    @PostMapping("/commit")
+    //@PostMapping("/commit")
     public ResponseEntity<CommitResponse> createCommit(@RequestBody CommitRequest request) throws Exception {
         return ResponseEntity.ok(githubService.createCommit(request));
     }
@@ -49,7 +49,7 @@ public class GitHubController {
      * @return
      * @throws Exception
      */
-    @PostMapping("/pull-request")
+    //@PostMapping("/pull-request")
     public ResponseEntity<PullRequestResponse> createPullRequest(@RequestBody PullRequestRequest request) throws Exception {
         return ResponseEntity.ok(githubService.createPullRequest(request));
     }
@@ -60,7 +60,7 @@ public class GitHubController {
      *   -H 'Content-Type: application/json' \
      *   -d '{"owner":"gustavocontabeis","repo":"meu-repo","branch":"main"}'
      */
-    @PostMapping("/clone")
+    //@PostMapping("/clone")
     public ResponseEntity<CloneRepositoryResponse> cloneRepository(@RequestBody CloneRepositoryRequest request) {
         return ResponseEntity.ok(githubService.cloneRepository(request));
     }
@@ -71,7 +71,7 @@ public class GitHubController {
      *   -H 'Content-Type: application/json' \
      *   -d '{"owner":"gustavocontabeis","repo":"meu-repo","branch":"main"}'
      */
-    @PostMapping("/discovery")
+    //@PostMapping("/discovery")
     public ResponseEntity.HeadersBuilder<?> discovery(@RequestBody CloneRepositoryRequest request) {
         githubService.discovery(request);
         return ResponseEntity.noContent();

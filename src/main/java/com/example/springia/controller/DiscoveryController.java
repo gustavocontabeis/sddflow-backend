@@ -30,7 +30,7 @@ public class DiscoveryController {
      * Exemplo:
      * {@code curl -X GET "http://localhost:8080/discovery?repositoryPath=/home/user/projeto"}
      */
-    @GetMapping
+    //@GetMapping
     public String discobery(@RequestParam String repositoryPath) {
         log.info("[API] GET /discovery");
         return discoveryService.dicovery(Path.of(repositoryPath));

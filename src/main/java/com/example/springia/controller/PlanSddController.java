@@ -35,7 +35,7 @@ public class PlanSddController {
      * curl -X GET http://localhost:8080/plan-sdds
      * }</pre>
      */
-    @GetMapping
+    //@GetMapping
     public List<PlanSdd> findAll() {
         log.info("[API] GET /plan-sdds");
         return planSddService.findAll().stream()
@@ -70,7 +70,7 @@ public class PlanSddController {
      *   -d '{"userStory":{"id":1},"content":"Conteudo plan","status":"IN_PROGRESS"}'
      * }</pre>
      */
-    @PostMapping
+    //@PostMapping
     public ResponseEntity<PlanSdd> save(@RequestBody PlanSdd planSdd) {
         log.info("[API] POST /plan-sdds id={} userStoryId={}",
                 planSdd.getId(),

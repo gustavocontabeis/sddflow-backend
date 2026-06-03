@@ -35,7 +35,7 @@ public class TaskSddController {
      * curl -X GET http://localhost:8080/task-sdds
      * }</pre>
      */
-    @GetMapping
+    //@GetMapping
     public List<TaskSdd> findAll() {
         log.info("[API] GET /task-sdds");
         return taskSddService.findAll().stream()
@@ -70,7 +70,7 @@ public class TaskSddController {
      *   -d '{"userStory":{"id":1},"content":"Conteudo task","status":"IN_PROGRESS"}'
      * }</pre>
      */
-    @PostMapping
+    //@PostMapping
     public ResponseEntity<TaskSdd> save(@RequestBody TaskSdd taskSdd) {
         log.info("[API] POST /task-sdds id={} userStoryId={}",
                 taskSdd.getId(),

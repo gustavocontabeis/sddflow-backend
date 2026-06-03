@@ -28,7 +28,7 @@ public class SpecSddController {
      * curl -X GET http://localhost:8080/spec-sdds
      * }</pre>
      */
-    @GetMapping
+    //@GetMapping
     public List<SpecSdd> findAll() {
         log.info("[API] GET /spec-sdds");
         return specSddService.findAll().stream()
@@ -63,7 +63,7 @@ public class SpecSddController {
      *   -d '{"userStory":{"id":1},"content":"Conteudo spec","status":"IN_PROGRESS"}'
      * }</pre>
      */
-    @PostMapping
+    //@PostMapping
     public ResponseEntity<SpecSdd> save(@RequestBody SpecSdd specSdd) {
         log.info("[API] POST /spec-sdds id={} userStoryId={}",
                 specSdd.getId(),

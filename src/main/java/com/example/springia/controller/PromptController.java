@@ -98,7 +98,7 @@ public class PromptController {
      * curl -X DELETE http://localhost:8080/prompts/1
      * }</pre>
      */
-    @DeleteMapping("/{id}")
+    //@DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         log.info("[API] DELETE /prompts/{}", id);
         return promptService.findById(id)

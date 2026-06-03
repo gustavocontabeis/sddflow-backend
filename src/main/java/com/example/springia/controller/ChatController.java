@@ -20,13 +20,13 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    @PostMapping("/create-session")
+    //@PostMapping("/create-session")
     public Message createSession(@RequestBody CreateSessionRequest request) {
         log.info("[API] POST /chat/create-session projectId={} name={} tamanhoMensagem={}",request.projectId(), request.name(), request.message() != null ? request.message().length() : 0);
         return chatService.createSession(request);
     }
 
-    @PostMapping
+    //@PostMapping
     public Message chat(@RequestParam Long sessionId,
                        @RequestBody String message) {
         log.info("[API] POST /chat sessionId={} tamanhoMensagem={}", sessionId, message != null ? message.length() : 0);
@@ -39,26 +39,26 @@ public class ChatController {
         return chatService.aprove(sessionId);
     }
 
-    @GetMapping
+    //@GetMapping
     public List<Message> getChat(@RequestParam Long sessionId) {
         log.info("[API] GET /chat sessionId={}", sessionId);
         return chatService.list(sessionId);
     }
 
-    @DeleteMapping
+    //@DeleteMapping
     public void delete(@RequestParam Long sessionId) {
         log.info("[API] DELETE /chat sessionId={}", sessionId);
         chatService.delete(sessionId);
     }
 
-    @PostMapping("/specification")
+    //@PostMapping("/specification")
     public SpecificationResponse generateSpecification(@RequestParam Long sessionId) {
         log.info("[API] POST /chat/specification sessionId={}", sessionId);
         UserStory saved = chatService.createUserStory(sessionId);
         return new SpecificationResponse(saved.getId(), saved.getConversationSession().getId(), saved.getContent(), saved.getGeneratedAt());
     }
 
-    @GetMapping("/specification")
+    //@GetMapping("/specification")
     public ResponseEntity<SpecificationResponse> getLatestSpecification(@RequestParam Long sessionId) {
         log.info("[API] GET /chat/specification sessionId={}", sessionId);
         return chatService.getLatestSpecification(sessionId)

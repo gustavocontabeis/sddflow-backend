@@ -43,7 +43,7 @@ public class ExecutorAgentController {
      *   }'
      * }</pre>
      */
-    @PostMapping("/execute")
+    //@PostMapping("/execute")
     public ResponseEntity<ExecutorAgentResponse> execute(@RequestBody ExecutorAgentRequest request) {
         log.info("[AGENT_CONTROLLER] POST /execute taskDescription_length={}",
             request.getTaskDescription() != null ? request.getTaskDescription().length() : 0);
@@ -85,7 +85,7 @@ public class ExecutorAgentController {
      *   }'
      * }</pre>
      */
-    @PostMapping("/execute-task/{taskId}")
+    //@PostMapping("/execute-task/{taskId}")
     public ResponseEntity<ExecutorAgentResponse> executeTask(
             @PathVariable Long taskId,
             @RequestBody(required = false) ExecutorAgentRequest request) {
@@ -129,7 +129,7 @@ public class ExecutorAgentController {
     /**
      * Retorna as ferramentas disponíveis para o agent
      */
-    @GetMapping("/tools")
+    //@GetMapping("/tools")
     public ResponseEntity<String> getAvailableTools() {
         log.info("[AGENT_CONTROLLER] GET /tools");
         String toolsDescription = executorAgentService.getToolRegistry().getToolsDescription();

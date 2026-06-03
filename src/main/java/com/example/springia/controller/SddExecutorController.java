@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/sdd-executor")
 @RequiredArgsConstructor
-public class SddTaskExecutorController {
+public class SddExecutorController {
 
     private final SddTaskExecutorService sddTaskExecutorService;
 
@@ -43,7 +43,7 @@ public class SddTaskExecutorController {
      * 4. Montar contexto completo
      * 5. Executar agent loop com ReAct pattern
      */
-    @PostMapping("/execute-task/{taskId}")
+    //@PostMapping("/execute-task/{taskId}")
     public ResponseEntity<ExecutorAgentResponse> executeTask(@PathVariable Long taskId) {
         log.info("[SDD_EXECUTOR_CONTROLLER] POST /execute-task/{}", taskId);
 
@@ -81,7 +81,7 @@ public class SddTaskExecutorController {
      * curl -X POST http://localhost:8080/sdd-executor/execute-userstory/1
      * }</pre>
      */
-    @PostMapping("/execute-userstory/{userStoryId}")
+    //@PostMapping("/execute-userstory/{userStoryId}")
     public ResponseEntity<ExecutorAgentResponse> executeByUserStory(@PathVariable Long userStoryId) {
         log.info("[SDD_EXECUTOR_CONTROLLER] POST /execute-userstory/{}", userStoryId);
 
@@ -159,7 +159,7 @@ public class SddTaskExecutorController {
      *
      * Útil para validar o contexto antes de realmente executar
      */
-    @GetMapping("/preview/{taskId}")
+    //@GetMapping("/preview/{taskId}")
     public ResponseEntity<String> previewContext(@PathVariable Long taskId) {
         log.info("[SDD_EXECUTOR_CONTROLLER] GET /preview/{}", taskId);
 
