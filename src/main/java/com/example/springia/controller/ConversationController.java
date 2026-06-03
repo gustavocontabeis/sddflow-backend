@@ -6,13 +6,13 @@ import com.example.springia.model.ConversationSession;
 import com.example.springia.model.Message;
 import com.example.springia.repository.ConversationRepository;
 import com.example.springia.repository.MessageRepository;
+import com.example.springia.service.ConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,19 +23,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ConversationController {
 
-    private final ConversationRepository conversationRepository;
+    private final ConversationService conversationService;
     private final MessageRepository messageRepository;
 
     //@GetMapping
     public List<ConversationSession> listAll() {
-        List<ConversationSession> allByOrderByCreatedAtDesc = conversationRepository.findAllByOrderByCreatedAtDesc();
+        List<ConversationSession> allByOrderByCreatedAtDesc = conversationService.findAllByOrderByCreatedAtDesc();
         allByOrderByCreatedAtDesc.stream().forEach(a->a.getUserStory().setConversationSession(null));
         return allByOrderByCreatedAtDesc;
     }
 
     //@GetMapping("/{id}")
     public ResponseEntity<ConversationSession> getById(@PathVariable Long id) {
-        return conversationRepository.findById(id)
+        return conversationService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -44,7 +44,7 @@ public class ConversationController {
     public ResponseEntity<Message> getLatestMessage(@PathVariable Long id) {
         log.info("[API] GET /conversations/{}/messages/latest", id);
 
-        if (!conversationRepository.existsById(id)) {
+        if (!conversationService.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -59,7 +59,7 @@ public class ConversationController {
     @GetMapping("/summary")
     public List<ConversationSummaryResponse> findAllSummary() {
         log.info("[API] GET /conversations/summary");
-        return conversationRepository.findAllByOrderByCreatedAtDesc().stream()
+        return conversationService.findAllByOrderByCreatedAtDesc().stream()
                 .map(c -> new ConversationSummaryResponse(
                         c.getId(),
                         c.getUserStory() != null ? c.getUserStory().getId() : null,
@@ -79,6 +79,20 @@ public class ConversationController {
                         c.getCreatedAt()
                 ))
                 .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Deletar conversa por ID (endpoint do trecho enviado)
+     * curl -i -X DELETE "http://localhost:8080/conversations/1"
+     * @param id
+     * @return
+     */
+    @DeleteMapping("/{id}")
+    @Transactional(readOnly = false)
+    public ResponseEntity<ConversationSession> delete(@PathVariable Long id) {
+        conversationService.delete(id);
+        return ResponseEntity.status(204).build();
     }
 
     private MessageResponse toResponse(Message message) {

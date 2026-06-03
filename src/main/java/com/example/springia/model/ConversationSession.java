@@ -30,9 +30,9 @@ public class ConversationSession {
     @JoinColumn(name = "id_project", nullable = false)
     private Project project;
 
-    @OneToOne(fetch = FetchType.EAGER, optional = true, mappedBy = "conversationSession")
+    @OneToOne(fetch = FetchType.EAGER, optional = true, mappedBy = "conversationSession", cascade = {CascadeType.REMOVE}, orphanRemoval = true)
     private UserStory userStory;
 
-    @OneToMany(mappedBy = "conversationSession", cascade = CascadeType.PERSIST, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "conversationSession", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Message> messages;
 }
