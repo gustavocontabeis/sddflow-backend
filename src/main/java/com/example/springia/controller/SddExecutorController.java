@@ -150,6 +150,23 @@ public class SddExecutorController {
     }
 
     /**
+     * Executa a implementação associada a um ImplSdd
+     *
+     * <p>Exemplo de execução:</p>
+     * <pre>{@code
+     * curl -X POST http://localhost:8080/sdd-executor/execute-impl/1
+     * }</pre>
+     */
+    @PostMapping("/execute-docker/{implId}")
+    public ResponseEntity testeDocker(@PathVariable Long implId) {
+        log.info("[SDD_EXECUTOR_CONTROLLER] POST /execute-docker/{}", implId);
+
+            sddTaskExecutorService.executeCommand("");
+
+            return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Visualiza o contexto que será enviado ao agent (sem executar)
      *
      * <p>Exemplo de execução:</p>

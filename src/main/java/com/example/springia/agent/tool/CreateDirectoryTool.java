@@ -44,7 +44,7 @@ public class CreateDirectoryTool implements Tool {
         }
 
         String fullPath = basePath + "/" + dirPath;
-        var path = Paths.get(fullPath);
+        var path = Paths.get(fullPath.replace("/tmp/tmp/", "/tmp/") );
 
         Files.createDirectories(path);
 

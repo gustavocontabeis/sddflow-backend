@@ -43,7 +43,7 @@ public class ListFilesTool implements Tool {
         String dirPath = params.getOrDefault("directory_path", "");
 
         String fullPath = dirPath.isBlank() ? basePath : basePath + "/" + dirPath;
-        var path = Paths.get(fullPath);
+        var path = Paths.get(fullPath.replace("/tmp/tmp/", "/tmp/"));
 
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);

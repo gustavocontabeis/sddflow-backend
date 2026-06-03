@@ -3,11 +3,16 @@ package com.example.springia.service;
 import com.example.springia.agent.loop.AgentExecution;
 import com.example.springia.model.*;
 import com.example.springia.repository.*;
+import com.example.springia.utils.ProcessBuilderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
 import java.util.Optional;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 /**
  * Serviço que integra o ExecutorAgent com o SDD (Spec Driven Development)
@@ -236,6 +241,51 @@ public class SddTaskExecutorService {
 
         return buildExecutionContext(userStory, taskSdd);
     }
+
+    public String executeCommand(String command) {
+        try {
+
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command("docker", "build", "--no-cache", "-t", "tarefas-backend", ".");
+            processBuilder.directory(new java.io.File("/tmp/tarefas-backend"));
+
+            // Junta stdout + stderr
+            processBuilder.redirectErrorStream(true);
+
+            Process process = processBuilder.start();
+
+            StringBuilder output = new StringBuilder();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.info(line); // opcional: ver em tempo real
+                    output.append(line).append("\n");
+                }
+            }
+
+            int exitCode = process.waitFor();
+
+            log.info("Exit code: " + exitCode);
+
+            if (exitCode != 0) {
+                log.info("Erro detectado no build!");
+                log.info(output.toString());
+                return output.toString();
+            }
+
+            String logErro = ProcessBuilderUtils.execute("/tmp/tarefas-backend", "docker", "rmi", "tarefas-backend");;
+
+            log.info("{}", logErro);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
 }
 
 

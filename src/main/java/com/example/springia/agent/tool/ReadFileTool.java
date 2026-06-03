@@ -44,7 +44,8 @@ public class ReadFileTool implements Tool {
         }
 
         String fullPath = basePath + "/" + filePath;
-        var path = Paths.get(fullPath);
+        var path = Paths.get(fullPath.replace("/tmp/tmp/", "/tmp/") );
+
 
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Arquivo não encontrado: " + filePath);

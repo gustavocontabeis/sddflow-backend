@@ -3,6 +3,7 @@ package com.example.springia.agent.tool;
 import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +47,8 @@ public class ExecuteCommandTool implements Tool {
         log.info("[TOOL] Executando comando: {}", command);
 
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-        pb.directory(new java.io.File(basePath));
+
+        pb.directory(new java.io.File(basePath.replace("/tmp/tmp/", "/tmp/")));
         pb.redirectErrorStream(true);
 
         Process process = pb.start();
