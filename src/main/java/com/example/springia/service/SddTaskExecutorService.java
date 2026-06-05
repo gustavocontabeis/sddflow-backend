@@ -1,15 +1,16 @@
 package com.example.springia.service;
 
 import com.example.springia.agent.loop.AgentExecution;
+import com.example.springia.dto.ProcessBuilderReturnDTO;
 import com.example.springia.model.*;
 import com.example.springia.repository.*;
-import com.example.springia.utils.ProcessBuilderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -155,7 +156,7 @@ public class SddTaskExecutorService {
      * Usa o documento Impl.md como guia principal para criação dos arquivos
      */
     public AgentExecution executeByImpl(Long implId) throws Exception {
-        log.info("[SDD_TASK_EXECUTOR] Iniciando execução de implementação id={}", implId);
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Iniciando execução de implementação id={}", implId);
 
         ImplSdd implSdd = implSddService.findById(implId)
                 .orElseThrow(() -> new IllegalArgumentException("ImplSdd não encontrada: " + implId));
@@ -170,11 +171,82 @@ public class SddTaskExecutorService {
         }
 
         String context = buildImplExecutionContext(userStory, implSdd);
-        log.info("[SDD_TASK_EXECUTOR] Contexto de implementação montado: {} bytes", context.length());
+
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Contexto de implementação montado: {} bytes", context.length());
 
         AgentExecution execution = executorAgentService.executeTask(context);
-        log.info("[SDD_TASK_EXECUTOR] Execução de implementação concluída: {} - {} passos",
-                execution.getStatus(), execution.getStepCount());
+
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de implementação concluída: {} - {} passos", execution.getStatus(), execution.getStepCount());
+
+        ConversationSession conversationSession = null;
+        Project project = null;
+        List<CodeRepo> repos = null;
+
+        try {
+
+            conversationSession = userStory.getConversationSession();
+            project = conversationSession.getProject();
+            repos = project.getRepos();
+
+            log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Projeto: {}-{}/{} - Requisito {} - {} - {}", project.getId(), project.getSigla(), project.getName(), conversationSession.getId(), conversationSession.getName(), repos.size());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Iniciando pós-validação de build para {} repositório(s)", repos.size());
+
+        for (CodeRepo repo : repos) {
+
+            log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] repositório {}-{} - {} - {}", repo.getId(), repo.getName(), repo.getPath(), repo.getUrl());
+
+            final int maxAttempts = 3;
+            ProcessBuilderReturnDTO executeDockerBuildImage = null;
+
+            do{
+
+                log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Validando repositório: {}", repo.getName());
+
+                for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+                    log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Tentativa {}/{} de build para repositório {}", attempt, maxAttempts, repo.getName());
+
+                    executeDockerBuildImage = executeDockerBuildImage(repo.getName());
+
+                    if (executeDockerBuildImage.isOk()) {
+                        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Build validado com sucesso para repositório {} na tentativa {}", repo.getName(), attempt);
+                        break;
+                    }
+
+                    log.warn("[SDD_TASK_EXECUTOR_SDD_IMPL] Falha na tentativa {}/{} para repositório {}. Erro:\n{}", attempt, maxAttempts, repo.getName(), executeDockerBuildImage.getOutput());
+
+                    if (!executeDockerBuildImage.isOk()) {
+                        log.error("[SDD_TASK_EXECUTOR_SDD_IMPL] Executando a correção baseado no log de erro {}", repo.getName());
+
+                        String retryPrompt = """
+                        Você é um arquiteto de software FullStack nível Sênior.
+                        Este é o log de erro ao subir o container. Execute as correções no códido.
+                        {logErro}
+                        """;
+
+                        PromptTemplate promptTemplate = new PromptTemplate(retryPrompt);
+
+                        String promptFinal = promptTemplate.create(Map.of(
+                                "logErro", executeDockerBuildImage.getOutput()
+                        )).getContents();
+
+                        AgentExecution retryExecution = executorAgentService.executeTask(promptFinal);
+                        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de retry : {} - {} passos", retryExecution.getStatus(), execution.getStepCount());
+                    }
+
+                }
+
+            } while (!executeDockerBuildImage.isOk() && maxAttempts > 0);
+
+        }
+
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] FINALIZADO execução de implementação id={}", implId);
 
         return execution;
     }
@@ -242,12 +314,79 @@ public class SddTaskExecutorService {
         return buildExecutionContext(userStory, taskSdd);
     }
 
-    public String executeCommand(String command) {
+    public ProcessBuilderReturnDTO executeDockerBuildImage(String imageName) {
+
+        ProcessBuilderReturnDTO ret = new ProcessBuilderReturnDTO();
+
+        try {
+
+            String effectiveCommand = "docker build --no-cache -t "+imageName+" .";
+            long startedAt = System.currentTimeMillis();
+
+            log.info("[SDD_TASK_EXECUTOR_DOCKER_IMAGE] Executando comando em /tmp/{}: {}", imageName, effectiveCommand);
+
+            //ret = execute("/tmp/" + imageName, effectiveCommand);
+
+            if(true) {
+                ProcessBuilder processBuilder = new ProcessBuilder();
+                processBuilder.command("bash", "-lc", effectiveCommand);
+                processBuilder.directory(new java.io.File("/tmp/" + imageName));
+
+                // Junta stdout + stderr
+                processBuilder.redirectErrorStream(true);
+
+                Process process = processBuilder.start();
+
+                StringBuilder output = new StringBuilder();
+
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        log.info(line); // opcional: ver em tempo real
+                        output.append(line).append("\n");
+                    }
+                }
+
+                int exitCode = process.waitFor();
+                ret.setExitCode(exitCode);
+
+                log.info("[SDD_TASK_EXECUTOR_DOCKER_IMAGE] Comando finalizado com exitCode={} em {}ms",
+                        exitCode, (System.currentTimeMillis() - startedAt));
+
+                if (exitCode != 0) {
+                    log.error("[SDD_TASK_EXECUTOR_DOCKER_IMAGE] Erro detectado no comando. Output:\n{}", output);
+                    ret.setOutput(output.toString());
+                    //return output.toString();
+                }
+            }
+
+            ProcessBuilderReturnDTO executeRemodeImage = execute("/tmp/"+imageName, "docker", "rmi", imageName);
+
+            if (!executeRemodeImage.isOk()) {
+                log.info("[SDD_TASK_EXECUTOR] Log da remoção da imagem docker: {}", executeRemodeImage.getOutput());
+            } else {
+                log.info("[SDD_TASK_EXECUTOR] Imagem docker removida sem mensagens adicionais.");
+            }
+
+        } catch (Exception e) {
+            log.error("[SDD_TASK_EXECUTOR] Erro inesperado ao executar comando", e);
+            ret.setOutput("Erro inesperado: " + e.getMessage());
+            return ret;
+        }
+
+        return ret;
+    }
+
+    public ProcessBuilderReturnDTO execute(String path, String...command) {
+
+        ProcessBuilderReturnDTO ret = new ProcessBuilderReturnDTO();
+
         try {
 
             ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.command("docker", "build", "--no-cache", "-t", "tarefas-backend", ".");
-            processBuilder.directory(new java.io.File("/tmp/tarefas-backend"));
+            processBuilder.command(command);
+            processBuilder.directory(new java.io.File(path));
 
             // Junta stdout + stderr
             processBuilder.redirectErrorStream(true);
@@ -266,26 +405,51 @@ public class SddTaskExecutorService {
             }
 
             int exitCode = process.waitFor();
+            ret.setExitCode(exitCode);
 
             log.info("Exit code: " + exitCode);
 
             if (exitCode != 0) {
                 log.info("Erro detectado no build!");
-                log.info(output.toString());
-                return output.toString();
+                ret.setOutput(output.toString());
+                log.info(ret.getOutput());
+                return ret;
             }
-
-            String logErro = ProcessBuilderUtils.execute("/tmp/tarefas-backend", "docker", "rmi", "tarefas-backend");;
-
-            log.info("{}", logErro);
-
         } catch (Exception e) {
-            e.printStackTrace();
+            new RuntimeException(e);
         }
 
-        return "";
+        return ret;
     }
 
+
+    public void xxx(String repoName) {
+
+        ProcessBuilderReturnDTO executeDockerBuildImage = executeDockerBuildImage(repoName);
+
+        if (!executeDockerBuildImage.isOk()) {
+            log.error("[SDD_TASK_EXECUTOR_SDD_IMPL] Executando a correção baseado no log de erro {}", repoName);
+
+            String retryPrompt = """
+                        Você é um arquiteto de software FullStack nível Sênior.
+                        Este é o log de erro ao subir o container. Execute as correções no códido.
+                        {logErro}
+                        """;
+
+            PromptTemplate promptTemplate = new PromptTemplate(retryPrompt);
+
+            String promptFinal = promptTemplate.create(Map.of(
+                    "logErro", executeDockerBuildImage.getOutput()
+            )).getContents();
+
+            try {
+                AgentExecution retryExecution = executorAgentService.executeTask(promptFinal);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+
+
+    }
 }
-
-

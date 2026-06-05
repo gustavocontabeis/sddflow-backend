@@ -1,14 +1,18 @@
 package com.example.springia.utils;
 
+import com.example.springia.dto.ProcessBuilderReturnDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 @Slf4j
-public class ProcessBuilderUtils {
+public class
+ProcessBuilderUtils {
 
-    public static String execute(String path, String...command) {
+    public static ProcessBuilderReturnDTO execute(String path, String...command) {
+
+        ProcessBuilderReturnDTO ret = new ProcessBuilderReturnDTO();
 
         try {
 
@@ -33,18 +37,20 @@ public class ProcessBuilderUtils {
             }
 
             int exitCode = process.waitFor();
+            ret.setExitCode(exitCode);
 
             log.info("Exit code: " + exitCode);
 
             if (exitCode != 0) {
                 log.info("Erro detectado no build!");
-                log.info(output.toString());
-                return output.toString();
+                ret.setOutput(output.toString());
+                log.info(ret.getOutput());
+                return ret;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            new RuntimeException(e);
         }
 
-        return "";
+        return ret;
     }
 }

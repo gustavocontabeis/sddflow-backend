@@ -3,10 +3,7 @@ package com.example.springia.model;
 import com.example.springia.model.enums.CodeRepoType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 
 @Data
@@ -20,14 +17,19 @@ public class CodeRepo {
     @GeneratedValue
     @Column(name = "id_code_repo")
     private Long id;
+
     private String name;
     private String path;
     private String url;
     private String branch;
+
     @Lob
     private String constitution;
+
     @Enumerated(EnumType.STRING)
     private CodeRepoType type;
+
+    @ToString.Exclude
     @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.DETACH)
     @JoinColumn(name = "id_project")

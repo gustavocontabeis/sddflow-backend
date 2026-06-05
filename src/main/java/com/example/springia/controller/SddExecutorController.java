@@ -161,7 +161,7 @@ public class SddExecutorController {
     public ResponseEntity testeDocker(@PathVariable Long implId) {
         log.info("[SDD_EXECUTOR_CONTROLLER] POST /execute-docker/{}", implId);
 
-            sddTaskExecutorService.executeCommand("");
+            sddTaskExecutorService.xxx("tarefas-backend");
 
             return ResponseEntity.noContent().build();
     }
