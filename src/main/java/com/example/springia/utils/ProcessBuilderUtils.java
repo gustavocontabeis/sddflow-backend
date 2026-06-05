@@ -38,17 +38,19 @@ ProcessBuilderUtils {
 
             int exitCode = process.waitFor();
             ret.setExitCode(exitCode);
+            ret.setOutput(output.toString());
 
             log.info("Exit code: " + exitCode);
 
             if (exitCode != 0) {
-                log.info("Erro detectado no build!");
-                ret.setOutput(output.toString());
-                log.info(ret.getOutput());
-                return ret;
+                log.error("Erro detectado no build! Output:\n{}", ret.getOutput());
+            } else {
+                log.info("Comando executado com sucesso. Output:\n{}", ret.getOutput());
             }
         } catch (Exception e) {
-            new RuntimeException(e);
+            ret.setExitCode(-1);
+            ret.setOutput("Erro ao executar comando: " + e.getMessage());
+            log.error("Exceção ao executar ProcessBuilder", e);
         }
 
         return ret;
