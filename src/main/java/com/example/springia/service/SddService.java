@@ -158,16 +158,29 @@ public class SddService {
         int i = 0;
         ImplSddValidationDto implSddValidationDto = ImplSddValidationDto.builder().build();
         do{
-            String validationPrompt = """
+            implSddValidationDto = validarCodigoGerado(content);
+        } while (implSddValidationDto.isValid() && i++ <=3);
+
+        implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
+
+        log.info("IMPL gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
+
+        return content;
+    }
+
+    private ImplSddValidationDto validarCodigoGerado(String content) {
+        String validationPrompt = """
                     Você é um engenheiro de software sênior.
                     Este é um checklist do código gerado. Analise o códido e valide se está conforme o checklist e retorne conforme o JSON especificado.
                     IMPORTANTE: Se o código não estiver válido corrija.
                     # BACKEND
                     - Valide se o código gerado não tem classes do pacote javax. precisa ser jakarta:
                     - Classes de domínio precisam ter comentários da proposta em todas as colunas em javadoc:
+                    - Código deverá ser gerado dentro do diretório definido na "Estrutura de Diretórios" da contitution.
                     # FRONTEND
                     - Todo componente gerado deve ter o arquivo .html e o .ts
                     - Se um novo componente foi criado ele deverá ter uma rota de acesso
+                    - Código deverá ser gerado dentro do diretório definido na "Estrutura de Diretórios" da contitution.
                     # RETORNO:
                     - Responda SOMENTE em JSON neste formato:
                     \\{
@@ -178,31 +191,23 @@ public class SddService {
                     =========== CODIGO GERADO ===========
                     {{PROMPT}}
                     """//.replace("{{CONSTITUTION}}", projectConstitution)
-                    .replace("{{PROMPT}}", content);
+                .replace("{{PROMPT}}", content);
 
+        ImplSddValidationDto implSddValidationDto = chatService.getChatClient().prompt()
+                .user(validationPrompt)
+                .call()
+                .entity(ImplSddValidationDto.class);
 
-            implSddValidationDto = chatService.getChatClient().prompt()
-                    .user(validationPrompt)
-                    .call()
-                    .entity(ImplSddValidationDto.class);
+        log.info("[CREATE IMPL] erros de validação: {} ", implSddValidationDto.getProblems());
 
-            log.info("[CREATE IMPL] erros de validação: {} ", implSddValidationDto.getProblems());
-
-            if(!implSddValidationDto.isValid()){
-                log.warn("[CREATE IMPL] Erro de validação. Tente novamente.");
-                log.warn("{}", implSddValidationDto.getProblems());
-                log.warn("[CREATE IMPL] conteúdo original \n{}", content);
-                content = implSddValidationDto.getContent();
-                log.warn("[CREATE IMPL] conteúdo corrigido \n{}", content);
-            }
-
-        } while (implSddValidationDto.isValid() && i++ <=3);
-
-        implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
-
-        log.info("IMPL gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
-
-        return content;
+        if(!implSddValidationDto.isValid()){
+            log.warn("[CREATE IMPL] Erro de validação. Tente novamente.");
+            log.warn("{}", implSddValidationDto.getProblems());
+            log.warn("[CREATE IMPL] conteúdo original \n{}", content);
+            content = implSddValidationDto.getContent();
+            log.warn("[CREATE IMPL] conteúdo corrigido \n{}", content);
+        }
+        return implSddValidationDto;
     }
 
     private String buildPromptAuditPrompt(UserStory userStory, String question) {
