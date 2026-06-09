@@ -176,24 +176,26 @@ public class SddTaskExecutorService {
 
         AgentExecution execution = executorAgentService.executeTask(context);
 
+        buildBockerImagesFromRopositories(execution, userStory);
+
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] FINALIZADO execução de implementação id={}", implId);
+
+        return execution;
+    }
+
+    private void buildBockerImagesFromRopositories(AgentExecution execution, UserStory userStory) throws Exception {
+
         log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de implementação concluída: {} - {} passos", execution.getStatus(), execution.getStepCount());
 
         ConversationSession conversationSession = null;
         Project project = null;
         List<CodeRepo> repos = null;
 
-        try {
+        conversationSession = userStory.getConversationSession();
+        project = conversationSession.getProject();
+        repos = project.getRepos();
 
-            conversationSession = userStory.getConversationSession();
-            project = conversationSession.getProject();
-            repos = project.getRepos();
-
-            log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Projeto: {}-{}/{} - Requisito {} - {} - {}", project.getId(), project.getSigla(), project.getName(), conversationSession.getId(), conversationSession.getName(), repos.size());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Projeto: {}-{}/{} - Requisito {} - {} - {}", project.getId(), project.getSigla(), project.getName(), conversationSession.getId(), conversationSession.getName(), repos.size());
 
         log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Iniciando pós-validação de build para {} repositório(s)", repos.size());
 
@@ -201,7 +203,7 @@ public class SddTaskExecutorService {
 
             log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] repositório {}-{} - {} - {}", repo.getId(), repo.getName(), repo.getPath(), repo.getUrl());
 
-            final int maxAttempts = 3;
+            final int maxAttempts = 1;
             ProcessBuilderReturnDTO executeDockerBuildImage = null;
 
             do{
@@ -219,7 +221,8 @@ public class SddTaskExecutorService {
                         break;
                     }
 
-                    log.warn("[SDD_TASK_EXECUTOR_SDD_IMPL] Falha na tentativa {}/{} para repositório {}. Erro:\n{}", attempt, maxAttempts, repo.getName(), executeDockerBuildImage.getOutput());
+                    log.warn("[SDD_TASK_EXECUTOR_SDD_IMPL] Falha na tentativa {}/{} para repositório {}.", attempt, maxAttempts, repo.getName());
+                    log.debug("{}", executeDockerBuildImage.getOutput());
 
                     if (!executeDockerBuildImage.isOk()) {
                         log.error("[SDD_TASK_EXECUTOR_SDD_IMPL] Executando a correção baseado no log de erro {}", repo.getName());
@@ -236,8 +239,10 @@ public class SddTaskExecutorService {
                                 "logErro", executeDockerBuildImage.getOutput()
                         )).getContents();
 
-                        AgentExecution retryExecution = executorAgentService.executeTask(promptFinal);
-                        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de retry : {} - {} passos", retryExecution.getStatus(), execution.getStepCount());
+                        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Prompt do Retry : {}", promptFinal);
+
+                        //AgentExecution retryExecution = executorAgentService.executeTask(promptFinal);
+                        //log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de retry : {} - {} passos", retryExecution.getStatus(), execution.getStepCount());
                     }
 
                 }
@@ -245,10 +250,6 @@ public class SddTaskExecutorService {
             } while (!executeDockerBuildImage.isOk() && maxAttempts > 0);
 
         }
-
-        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] FINALIZADO execução de implementação id={}", implId);
-
-        return execution;
     }
 
     /**

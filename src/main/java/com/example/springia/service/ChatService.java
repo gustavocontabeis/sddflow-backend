@@ -6,6 +6,7 @@ import com.example.springia.model.ConversationSession;
 import com.example.springia.model.Message;
 import com.example.springia.model.Project;
 import com.example.springia.model.UserStory;
+import com.example.springia.model.enums.MessageRole;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +66,7 @@ public class ChatService {
         Long effectiveSessionId = session.getId();
         log.debug("[CHAT] Sessao carregada id={} stage={}", effectiveSessionId, session.getStatus());
 
-        saveMessage(session, "USER", userInput);
+        saveMessage(session, MessageRole.USER, userInput);
         log.debug("[CHAT] Mensagem USER salva sessao={} tamanho={}", effectiveSessionId, userInput != null ? userInput.length() : 0);
 
         List<Message> history = messageRepository.findByConversationSessionIdOrderByTimestampAsc(effectiveSessionId);
@@ -82,7 +83,7 @@ public class ChatService {
         }
 
         log.info("[CHAT] RESPONSE: {}", response);
-        Message assistant = saveMessage(session, "ASSISTANT", response);
+        Message assistant = saveMessage(session, MessageRole.ASSISTANT, response);
         log.debug("[CHAT] Mensagem ASSISTANT salva sessao={} tamanho={}", effectiveSessionId, response != null ? response.length() : 0);
         log.info("[CHAT] Processamento finalizado sessao={}", effectiveSessionId);
         assistant.setConversationSession(null);
@@ -90,6 +91,16 @@ public class ChatService {
     }
 
     public String chat(String userInput) {
+        String response = callWithAdvisors(userInput, null);
+
+        if (response == null || response.isBlank()) {
+            return "Nao foi possivel gerar uma resposta no momento.";
+        }
+
+        return response;
+    }
+
+    public String chat(String userInput, Class dto) {
         String response = callWithAdvisors(userInput, null);
 
         if (response == null || response.isBlank()) {
@@ -111,6 +122,11 @@ public class ChatService {
                 .call()
                 .content();
     }
+
+    public ChatClient getChatClient() {
+        return chatClient;
+    }
+
 
     private ConversationSession resolveSession(Long sessionId, Long projectId, String sessionName) {
         if (sessionId != null) {
@@ -140,7 +156,7 @@ public class ChatService {
         return conversationRepository.save(session);
     }
 
-    private Message saveMessage(ConversationSession session, String role, String content) {
+    private Message saveMessage(ConversationSession session, MessageRole role, String content) {
         if (session == null || session.getId() == null) {
             throw new IllegalArgumentException("Sessao invalida para salvar mensagem");
         }

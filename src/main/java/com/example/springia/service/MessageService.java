@@ -4,6 +4,7 @@ import com.example.springia.model.ConversationSession;
 import com.example.springia.model.Message;
 import com.example.springia.model.Project;
 import com.example.springia.model.UserStory;
+import com.example.springia.model.enums.MessageRole;
 import com.example.springia.repository.ConversationRepository;
 import com.example.springia.repository.MessageRepository;
 import com.example.springia.repository.SpecificationDocumentRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -41,19 +43,21 @@ public class MessageService {
             message.getConversationSession().setCreatedAt(LocalDateTime.now());
             conversationRepository.save(message.getConversationSession());
         }
-
+        message.setTimestamp(LocalDateTime.now());
         messageRepository.save(message);
 
         List<Message> history = messageRepository.findByConversationSessionIdOrderByTimestampAsc(message.getConversationSession().getId());
 
         String prompt = buildPrompt(message.getConversationSession(), history, message.getContent());
+        log.info("[MESSAGE_SERVICE] - prompt construido: {} ", prompt);
 
         String response = chatClient.prompt()
+                .system("Você é um especialista sênior em engenharia de requisitos.")
                 .user(prompt)
                 .call()
                 .content();
 
-        Message assistant = saveMessage(message.getConversationSession(), "ASSISTANT", response);
+        Message assistant = saveMessage(message.getConversationSession(), MessageRole.ASSISTANT, response);
 
         return assistant;
 
@@ -61,31 +65,40 @@ public class MessageService {
 
     private String buildPrompt(ConversationSession session, List<Message> history, String input) {
 
+        log.info("[MESSAGE_SERVICE] - build prompt -  session {}, Quand Mensagens: {} - input: {}", session.getId(), history.size(), input);
+
+//        StringBuilder sb = new StringBuilder();
+//        for (Message m : history) {
+//            sb.append(" ==== MENSAGEM "+(i++)+" ====\n");
+//            sb.append(m.getRole() + ": " + m.getContent());
+//            sb.append("\n");
+//        }
+//        String historyText = sb.toString();
         String historyText = history.stream()
-                .map(m -> m.getRole() + ": " + m.getContent())
+                .map(m -> "====== MENSAGEM "+m.getId()+" ======\n"
+                        +m.getRole() + ": " + m.getContent())
                 .reduce("", (a, b) -> a + "\n" + b);
 
         return """
-        Você é um especialista sênior em engenharia de requisitos.
-
+        
         ESTÁGIO: %s
 
         HISTÓRICO:
+        =====================
         %s
-
+        =====================
         ENTRADA:
         %s
 
         AÇÃO:
-        - Continue refinando a ideia
-        - Faça perguntas objetivas
+        - Continue refinando a ideia.
+        - Mantenha as regras de negócio definidas nas conversas anteriores.
+        - Confirme se não perdeu nenhuma regra de negócio anterior durante as conversas
+        - Faça perguntas objetivas.
         - faça no máximo 5 pergundas de cada vez.
+        - Coloque apenas uma linha de espaço abaixo de cada pergunta para o usuário poder responder  
         - Estruture melhor os requisitos em:
-        ```markdown
           # Perguntas de refinamento
-          
-            - Coloque apenas uma linha de espaço abaixo de cada pergunta para o usuário poder responder  
-          
           # Especificação Funcional
           ## Objetivo
           ## Escopo
@@ -94,7 +107,6 @@ public class MessageService {
           ### 2. Histórias de Usuário
           ### 3. Regras de Negócio
           ### 4. Critérios de Aceite
-        ```
         """.formatted(
                 session.getStatus(),
                 historyText,
@@ -102,7 +114,7 @@ public class MessageService {
         );
     }
 
-    private Message saveMessage(ConversationSession session, String role, String content) {
+    private Message saveMessage(ConversationSession session, MessageRole role, String content) {
         if (session == null || session.getId() == null) {
             throw new IllegalArgumentException("Sessao invalida para salvar mensagem");
         }

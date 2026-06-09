@@ -1,5 +1,6 @@
 package com.example.springia.dto;
 
+import com.example.springia.model.enums.MessageRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 public class MessageResponse {
     private Long id;
     private Long sessionId;
-    private String role;
+    private MessageRole role;
     private String content;
     private LocalDateTime timestamp;
 }

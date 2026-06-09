@@ -81,6 +81,7 @@ public class PromptController {
      curl -X POST http://localhost:8080/prompts -H "Content-Type: application/json" -d '{"key":"CREATE_SSD_PLAN","content":"Conteudo do prompt"}'
      curl -X POST http://localhost:8080/prompts -H "Content-Type: application/json" -d '{"key":"CREATE_SSD_TASK","content":"Conteudo do prompt"}'
      curl -X POST http://localhost:8080/prompts -H "Content-Type: application/json" -d '{"key":"CREATE_SSD_IMPL","content":"Conteudo do prompt"}'
+     curl -X POST http://localhost:8080/prompts -H "Content-Type: application/json" -d '{"key":"CREATE_SSD_IMPL_AFTER","content":"Conteudo do prompt"}'
      * }</pre>
      */
     @PostMapping

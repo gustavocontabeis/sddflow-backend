@@ -1,13 +1,14 @@
 package com.example.springia.service;
 
+import com.example.springia.dto.ImplSddValidationDto;
 import com.example.springia.dto.PromptAuditResponse;
 import com.example.springia.model.*;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.UserStoryRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 @Slf4j
 @Service
@@ -149,9 +150,53 @@ public class SddService {
                 .replace("{{SDD_PLAN}}", userStory.getPlan().getContent())
                 .replace("{{SDD_TASK}}", userStory.getTask().getContent());
 
-        log.info("IMPL promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
+        log.info("[CREATE IMPL] promptLength={}", prompt.split(" ").length);
+        log.debug("[CREATE IMPL] {}", prompt);
 
         String content = chatService.chat(prompt);
+
+        int i = 0;
+        ImplSddValidationDto implSddValidationDto = ImplSddValidationDto.builder().build();
+        do{
+            String validationPrompt = """
+                    Você é um engenheiro de software sênior.
+                    Este é um checklist do código gerado. Analise o códido e valide se está conforme o checklist e retorne conforme o JSON especificado.
+                    IMPORTANTE: Se o código não estiver válido corrija.
+                    # BACKEND
+                    - Valide se o código gerado não tem classes do pacote javax. precisa ser jakarta:
+                    - Classes de domínio precisam ter comentários da proposta em todas as colunas em javadoc:
+                    # FRONTEND
+                    - Todo componente gerado deve ter o arquivo .html e o .ts
+                    - Se um novo componente foi criado ele deverá ter uma rota de acesso
+                    # RETORNO:
+                    - Responda SOMENTE em JSON neste formato:
+                    \\{
+                      "content": string, //CODIGO GERADO original ou CODIGO GERADO corrigido. Se houveram erros de validação, o conteúdo aqui já deve estar corrigido.
+                      "problems": string, /Liste os erros de validação encontrados.
+                      "valid": boolean //true se não houveram erro de valiação.
+                    \\}
+                    =========== CODIGO GERADO ===========
+                    {{PROMPT}}
+                    """//.replace("{{CONSTITUTION}}", projectConstitution)
+                    .replace("{{PROMPT}}", content);
+
+
+            implSddValidationDto = chatService.getChatClient().prompt()
+                    .user(validationPrompt)
+                    .call()
+                    .entity(ImplSddValidationDto.class);
+
+            log.info("[CREATE IMPL] erros de validação: {} ", implSddValidationDto.getProblems());
+
+            if(!implSddValidationDto.isValid()){
+                log.warn("[CREATE IMPL] Erro de validação. Tente novamente.");
+                log.warn("{}", implSddValidationDto.getProblems());
+                log.warn("[CREATE IMPL] conteúdo original \n{}", content);
+                content = implSddValidationDto.getContent();
+                log.warn("[CREATE IMPL] conteúdo corrigido \n{}", content);
+            }
+
+        } while (implSddValidationDto.isValid() && i++ <=3);
 
         implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
 
