@@ -119,6 +119,20 @@ public class FileUtils {
         }
     }
 
-
-
+    /**
+     * Remove todo o diretório mesmo que nao esteja vazio
+     * @param path
+     * @throws IOException
+     */
+    public static void removeDir(Path path) throws IOException {
+        Files.walk(path)
+                .sorted(Comparator.reverseOrder()) // deleta filhos antes do pai
+                .forEach(p -> {
+                    try {
+                        Files.delete(p);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Erro ao deletar: " + p, e);
+                    }
+                });
+    }
 }

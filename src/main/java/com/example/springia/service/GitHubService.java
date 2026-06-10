@@ -154,7 +154,7 @@ public class GitHubService {
         long start = System.currentTimeMillis();
 
         try {
-            Path tempDir = Files.createTempDirectory("springia-clone-" + request.getOwner() + "-" + request.getRepo() + "-");
+            Path tempDir = Files.createTempDirectory(request.getRepo());
             log.debug("[GITHUB] Diretorio temporario criado path={}", tempDir);
 
             String cloneUrl = buildCloneUrl(request.getOwner(), request.getRepo());

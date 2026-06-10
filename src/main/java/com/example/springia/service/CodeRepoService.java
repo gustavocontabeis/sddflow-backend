@@ -1,14 +1,19 @@
 package com.example.springia.service;
 
+import com.example.springia.dto.CloneRepositoryRequest;
+import com.example.springia.dto.CloneRepositoryResponse;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.repository.CodeRepoRepository;
+import com.example.springia.utils.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +24,7 @@ public class CodeRepoService {
 
     private final CodeRepoRepository codeRepoRepository;
     private final DiscoveryService discoveryService;
+    private final GitHubService gitHubService;
 
     @Transactional(readOnly = true)
     public List<CodeRepo> findAll() {
@@ -56,13 +62,21 @@ public class CodeRepoService {
     }
 
     @Transactional(readOnly = false)
-    public CodeRepo updateConstitution(Long id) {
+    public CodeRepo updateConstitution(Long id) throws IOException {
         Optional<CodeRepo> byId = findById(id);
         if(byId.isPresent()){
             CodeRepo codeRepo = byId.get();
-            String dicovery = discoveryService.dicovery(Path.of(codeRepo.getPath()));
+            String[] split = codeRepo.getUrl().split("/");
+            String owner =  split[split.length - 2];
+            String repo = split[split.length - 1].replace(".git", "");
+
+            CloneRepositoryResponse cloneRepositoryResponse = gitHubService.cloneRepository(CloneRepositoryRequest.builder().owner(owner).repo(repo).branch(codeRepo.getBranch()).build());
+
+            String dicovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
+            //String dicovery = discoveryService.dicovery(Path.of(codeRepo.getPath()));
             codeRepo.setConstitution(dicovery);
             save(codeRepo);
+            FileUtils.removeDir(Paths.get(cloneRepositoryResponse.getClonedPath()));
             return codeRepo;
         }
         return null;

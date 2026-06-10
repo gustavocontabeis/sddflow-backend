@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -96,7 +97,7 @@ public class CodeRepoController {
      * }</pre>
      */
     @PatchMapping("/update-constitution/{id}")
-    public ResponseEntity<CodeRepo> updateConstitution(@PathVariable Long id) {
+    public ResponseEntity<CodeRepo> updateConstitution(@PathVariable Long id) throws IOException {
         CodeRepo codeRepo = codeRepoService.updateConstitution(id);
         if(codeRepo != null){
             return ResponseEntity.ok(codeRepo);
