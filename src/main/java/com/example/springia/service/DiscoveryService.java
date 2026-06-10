@@ -96,14 +96,43 @@ public class DiscoveryService {
             }
         }
 
+        String conteudoPacotesRegrasNegocio = "";
+        if(discoveryDirs.getPacotesRegrasNegocio().length > 0){
+
+            conteudoPacotesRegrasNegocio = FileUtils.joinFileContents(discoveryDirs.getPacotesRegrasNegocio());
+            log.info("");
+            log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+            log.info("CONTEUDO DOS ARQUIVOS DE REGRA DE NECÓCIO");
+            log.info("{}", conteudoPacotesRegrasNegocio);
+
+        }
+
+        String conteudoPacotesEndpointsRest = "";
+        if(discoveryDirs.getPacotesEndpointsRest().length > 0){
+
+            conteudoPacotesEndpointsRest = FileUtils.joinFileContents(discoveryDirs.getPacotesEndpointsRest());
+            log.info("");
+            log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+            log.info("CONTEUDO DOS ARQUIVOS DE ENDPOINTS REST");
+            log.info("{}", conteudoPacotesEndpointsRest);
+
+        }
+
+        String regrasNegocio = buscarRegrasNegocio(conteudoPacotesRegrasNegocio, conteudoPacotesEndpointsRest, modeloJson);
+        log.info("");
+        log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+        log.info("DESCRIÇÃO DAS REGRAS DE NEGÓCIO APLICAÇÃO");
+        log.info("{}", regrasNegocio);
+
         return createContitution(
                 configuracoes,
                 discoveryDirs.getDescricaoEstruturaDiretorios(),
-                modeloJson
+                modeloJson,
+                regrasNegocio
         );
     }
 
-    private String createContitution(DiscoveryDTO configuracoes, String descricaoEstruturaDiretorios, String descricaoModelo) {
+    private String createContitution(DiscoveryDTO configuracoes, String descricaoEstruturaDiretorios, String descricaoModelo, String regrasNegocio) {
 
         String linguagem = configuracoes.linguagem();
         String frameworksBibliotecas = String.join(", ", configuracoes.frameworksBibliotecas());
@@ -124,6 +153,8 @@ public class DiscoveryService {
                 [%s]
                 Esse é o conteúdo refetente descrição dos modelos e relacionamentos do sistema.
                 [%s]
+                Esse é o conteúdo refetente regras de negócio do sistema.
+                [%s]
                 Crie o conteudo de um documento contituition.md contendo os seguintes tópicos:
                 # CONSTITUTION
                 # STACK: 
@@ -138,13 +169,15 @@ public class DiscoveryService {
                 # CLASSES E ATRIBUTOS
                 ### DIAGRAMA DE CLASSES EM MERMAID
                 ### DESCRIÇÃO DO DIAGRAMA
+                # REGRAS DE NEGÓCIO
                 IMPORTANTE: retorne somente o conteúdo do documento sem outros comentários.
                 """, linguagem,
                 frameworksBibliotecas,
                 descricaoEstruturaDiretorios,
                 conexoesComBancoDeDados,
                 integracoesComOutrosSistemas,
-                descricaoModelo);
+                descricaoModelo,
+                regrasNegocio);
 
         log.info("");
         log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
@@ -182,6 +215,28 @@ public class DiscoveryService {
         return content;
     }
 
+    private String buscarRegrasNegocio(String conteudoArquivosRegraNegocio, String conteudoArquivosEndpointRest, String modelo) {
+        String prompt = String.format("""
+                Voce e um arquiteto de software senior.
+                Este é o diagrama do modelo do sistema:
+                %s
+                Esse é o conteúdo dos arquivos de regra de negócio do sistema.
+                %s
+                Esse é o conteúdo dos arquivos de endpoint REST do sistema.
+                %s
+                Liste as regras de negócio existentes no sistema.
+                Não alucine.
+                """, modelo, String.join("\n", conteudoArquivosRegraNegocio), conteudoArquivosEndpointRest);
+
+        String content = chatClient.prompt()
+                .user(prompt)
+                .call()
+                .content();
+
+        log.info("{}", content);
+        return content;
+    }
+
     private DiscoveryDTO buscarConfiguracoes(String conteudoArquivosConfiguracao) {
         String prompt = String.format("""
                 Voce e um arquiteto de software senior.
@@ -191,7 +246,7 @@ public class DiscoveryService {
                 - frameworks e bibliotecas com as versões. Ex: ["java 21", "quarkus 3.14.234", "JPA 2.1", "lombok 2.6", ...]
                 - conexoes com banco de dados em array de strings informando o tipo de banco (oracle, postgres, etc... ) e IP/DNS de destino. Ex: ["oracle IP 123.456.654.321", "mysql IP 123.456.654.321"]
                 - integracoes com outros sistemas em array de strings descritivas. Ex: ["REST - receita federal - http://receitafederal"]
-                
+                - regras de negócio. Liste todas as regras de negócio encontradas nas classes de Endpoints REST e classes de regras de negócio.
                 retornar nesta estrutura em JSON conforme exemplo:
                 {
                   "linguagem":"java",
@@ -199,6 +254,7 @@ public class DiscoveryService {
                   "conexoesComBancoDeDados":[""]
                   "integracoesComOutrosSistemas":[""]
                   "arquivosConfiguracao":[""]
+                  "regrasDeNegocio":[""]
                 }
                 IMPORTANTE: retornar apenas o JSON puro. nada antes nem depois
                 %s

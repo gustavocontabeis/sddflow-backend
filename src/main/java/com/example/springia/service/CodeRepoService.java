@@ -62,9 +62,12 @@ public class CodeRepoService {
     }
 
     @Transactional(readOnly = false)
-    public CodeRepo updateConstitution(Long id) throws IOException {
+    public CodeRepo updateStructure(Long id) throws IOException {
+
         Optional<CodeRepo> byId = findById(id);
+
         if(byId.isPresent()){
+
             CodeRepo codeRepo = byId.get();
             String[] split = codeRepo.getUrl().split("/");
             String owner =  split[split.length - 2];
@@ -73,12 +76,18 @@ public class CodeRepoService {
             CloneRepositoryResponse cloneRepositoryResponse = gitHubService.cloneRepository(CloneRepositoryRequest.builder().owner(owner).repo(repo).branch(codeRepo.getBranch()).build());
 
             String dicovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
-            //String dicovery = discoveryService.dicovery(Path.of(codeRepo.getPath()));
-            codeRepo.setConstitution(dicovery);
+
+            codeRepo.setStructure(dicovery);
+
             save(codeRepo);
             FileUtils.removeDir(Paths.get(cloneRepositoryResponse.getClonedPath()));
             return codeRepo;
         }
+        return null;
+    }
+
+    @Transactional(readOnly = false)
+    public CodeRepo updateConstitution(Long id) throws IOException {
         return null;
     }
 }

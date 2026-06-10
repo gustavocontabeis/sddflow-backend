@@ -68,16 +68,16 @@ public class CodeRepoController {
     }
 
     /**
-     * Atualiza um repositório de código existente.
+     * Atualiza completamente um repositório de código existente.
      *
      * <p>Exemplo de uso:</p>
      * <pre>{@code
      * curl -X PUT http://localhost:8080/api/coderepos/1 \
      *   -H "Content-Type: application/json" \
-     *   -d '{"name":"repo1","path":"/novo-caminho","branch":"dev","type":"GIT","project":{"id":1}}'
+     *   -d '{"name":"repo-atualizado","path":"/novo/caminho","branch":"develop","type":"GIT","project":{"id":1}}'
      * }</pre>
      */
-    //@PutMapping("/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<CodeRepo> update(@PathVariable Long id, @RequestBody CodeRepo codeRepo) {
         if (!codeRepoService.findById(id).isPresent()) {
             return ResponseEntity.notFound().build();
@@ -92,13 +92,13 @@ public class CodeRepoController {
      *
      * <p>Exemplo de uso:</p>
      * <pre>{@code
-     * curl -X PATCH http://localhost:8080/api/coderepos/update-constitution/1 \
+     * curl -X PATCH http://localhost:8080/api/coderepos/update-structure/1 \
      *   -H "Content-Type: application/json" \
      * }</pre>
      */
-    @PatchMapping("/update-constitution/{id}")
-    public ResponseEntity<CodeRepo> updateConstitution(@PathVariable Long id) throws IOException {
-        CodeRepo codeRepo = codeRepoService.updateConstitution(id);
+    @PatchMapping("/update-structure/{id}")
+    public ResponseEntity<CodeRepo> updateStructure(@PathVariable Long id) throws IOException {
+        CodeRepo codeRepo = codeRepoService.updateStructure(id);
         if(codeRepo != null){
             return ResponseEntity.ok(codeRepo);
         }

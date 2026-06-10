@@ -26,6 +26,9 @@ public class CodeRepo {
     @Lob
     private String constitution;
 
+    @Lob
+    private String structure;
+
     @Enumerated(EnumType.STRING)
     private CodeRepoType type;
 

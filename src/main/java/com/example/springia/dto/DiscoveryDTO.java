@@ -20,7 +20,11 @@ public record DiscoveryDTO(
     List<String> integracoesComOutrosSistemas,
 
     @JsonProperty("arquivosConfiguracao")
-    List<String> arquivosConfiguracao
+    List<String> arquivosConfiguracao,
+
+    @JsonProperty("regrasDeNegocio")
+    List<String> regrasDeNegocio
+
 ) {
 }
 
