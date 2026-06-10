@@ -38,8 +38,6 @@ public class GitHubService {
     private RestClient restClient;
     private final ChatService chatService;
 
-
-
     private void initRestClient() {
         if (restClient == null) {
             log.info("[GITHUB] Inicializando RestClient");

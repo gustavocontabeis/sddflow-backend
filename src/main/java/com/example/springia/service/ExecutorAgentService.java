@@ -19,6 +19,7 @@ public class ExecutorAgentService {
     private final ChatClient chatClient;
     private final ToolRegistry toolRegistry;
     private final AgentLoop agentLoop;
+    private final GitHubService gitHubService;
 
     /**
      * Diretório base para operações de filesystem (pode ser configurado)
@@ -26,8 +27,10 @@ public class ExecutorAgentService {
     private String basePath;
 
     public ExecutorAgentService(
-            ChatClient.Builder chatClientBuilder
+            ChatClient.Builder chatClientBuilder,
+            GitHubService gitHubService
     ) {
+        this.gitHubService = gitHubService;
         this.chatClient = chatClientBuilder.build();
         this.toolRegistry = new ToolRegistry();
 
@@ -52,6 +55,11 @@ public class ExecutorAgentService {
         toolRegistry.registerTool(new CreateDirectoryTool(basePath));
         toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
+        toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
+        toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));
+        toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));
+        toolRegistry.registerTool(new GitHubCreatePullRequestTool(gitHubService));
+        toolRegistry.registerTool(new GitHubDiscoveryTool(gitHubService));
     }
 
     /**
