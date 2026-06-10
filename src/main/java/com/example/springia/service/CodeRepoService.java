@@ -2,6 +2,7 @@ package com.example.springia.service;
 
 import com.example.springia.dto.CloneRepositoryRequest;
 import com.example.springia.dto.CloneRepositoryResponse;
+import com.example.springia.dto.UpdateCodeRepoConstitutionsRequest;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.repository.CodeRepoRepository;
 import com.example.springia.utils.FileUtils;
@@ -86,9 +87,28 @@ public class CodeRepoService {
         return null;
     }
 
-    @Transactional(readOnly = false)
-    public CodeRepo updateConstitution(Long id) throws IOException {
-        return null;
+    @Transactional
+    public CodeRepo updateConstitutions(Long id, UpdateCodeRepoConstitutionsRequest request) {
+
+        Optional<CodeRepo> byId = findById(id);
+
+        if (byId.isEmpty()) {
+            return null;
+        }
+
+        CodeRepo codeRepo = byId.get();
+
+        // Atualiza apenas os dois campos permitidos pelo endpoint PATCH.
+        if (request != null) {
+            if (request.getConstitution() != null) {
+                codeRepo.setConstitution(request.getConstitution());
+            }
+            if (request.getStructure() != null) {
+                codeRepo.setStructure(request.getStructure());
+            }
+        }
+
+        return save(codeRepo);
     }
 }
 

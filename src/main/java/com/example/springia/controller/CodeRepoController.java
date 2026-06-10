@@ -1,5 +1,6 @@
 package com.example.springia.controller;
 
+import com.example.springia.dto.UpdateCodeRepoConstitutionsRequest;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.enums.CodeRepoType;
 import com.example.springia.service.CodeRepoService;
@@ -99,6 +100,32 @@ public class CodeRepoController {
     @PatchMapping("/update-structure/{id}")
     public ResponseEntity<CodeRepo> updateStructure(@PathVariable Long id) throws IOException {
         CodeRepo codeRepo = codeRepoService.updateStructure(id);
+        if(codeRepo != null){
+            return ResponseEntity.ok(codeRepo);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Atualiza apenas os atributos constitution e structure de um repositório.
+     *
+     * <p>Exemplo de uso:</p>
+     * <pre>{@code
+     * curl -X PATCH http://localhost:8080/api/coderepos/update-constituctions/1 \
+     *   -H "Content-Type: application/json" \
+     *   -d '{"constitution":"nova-constituicao","structure":"nova-estrutura"}'
+     * }</pre>
+     *
+     * @param id ID do repositório de código
+     * @param request payload com os campos constitution e structure
+     * @return Repositório atualizado
+     */
+    @PatchMapping("/update-constituctions/{id}")
+    public ResponseEntity<CodeRepo> updateConstitutions(
+            @PathVariable Long id,
+            @RequestBody UpdateCodeRepoConstitutionsRequest request
+    ) {
+        CodeRepo codeRepo = codeRepoService.updateConstitutions(id, request);
         if(codeRepo != null){
             return ResponseEntity.ok(codeRepo);
         }
