@@ -52,6 +52,10 @@ public class FileUtils {
     }
 
     public static String joinFileContents(String[] filePaths) {
+        if (filePaths == null || filePaths.length == 0) {
+            return "";
+        }
+
         return joinFileContents(java.util.Arrays.stream(filePaths)
                 .map(Path::of)
                 .toArray(Path[]::new));
@@ -66,31 +70,55 @@ public class FileUtils {
         StringBuilder conteudo = new StringBuilder();
 
         for (Path filePath : filePaths) {
-            if (filePaths == null) {
+            if (filePath == null) {
+                log.warn("Caminho nulo ignorado");
                 continue;
             }
 
-            if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
-                log.warn("Arquivo ignorado (nao existe ou nao e regular): {}", filePath);
+            if (!Files.exists(filePath)) {
+                log.warn("Caminho ignorado (nao existe): {}", filePath);
                 continue;
             }
 
-            try {
-                if (!conteudo.isEmpty()) {
-                    conteudo.append("\n\n");
+            if (Files.isRegularFile(filePath)) {
+                appendFileContent(conteudo, filePath);
+                continue;
+            }
+
+            if (Files.isDirectory(filePath)) {
+                try (Stream<Path> stream = Files.walk(filePath)) {
+                    stream
+                            .filter(FileUtils::notInIgnoredDirectory)
+                            .filter(Files::isRegularFile)
+                            .sorted(Comparator.comparing(Path::toString))
+                            .forEach(path -> appendFileContent(conteudo, path));
+                } catch (IOException e) {
+                    log.warn("Falha ao percorrer diretorio: {}", filePath, e);
                 }
-
-                conteudo.append("Arquivo: ")
-                        .append(filePath)
-                        .append("\n")
-                        .append(Files.readString(filePath));
-            } catch (IOException e) {
-                log.warn("Falha ao ler arquivo de configuracao: {}", filePath, e);
+                continue;
             }
+
+            log.warn("Caminho ignorado (nao e arquivo nem diretorio): {}", filePath);
         }
 
         return conteudo.toString();
     }
+
+    private static void appendFileContent(StringBuilder conteudo, Path filePath) {
+        try {
+            if (!conteudo.isEmpty()) {
+                conteudo.append("\n\n");
+            }
+
+            conteudo.append("Arquivo: ")
+                    .append(filePath)
+                    .append("\n")
+                    .append(Files.readString(filePath));
+        } catch (IOException e) {
+            log.warn("Falha ao ler arquivo de configuracao: {}", filePath, e);
+        }
+    }
+
 
 
 }

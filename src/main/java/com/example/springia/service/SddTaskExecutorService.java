@@ -1,14 +1,17 @@
 package com.example.springia.service;
 
 import com.example.springia.agent.loop.AgentExecution;
+import com.example.springia.dto.BuildCodeRepoLogDTO;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
 import com.example.springia.model.*;
 import com.example.springia.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +38,7 @@ public class SddTaskExecutorService {
     private final SpecSddService specSddService;
     private final PlanSddService planSddService;
     private final ImplSddService implSddService;
+    private final ChatClient.Builder chatClientBuilder;
 
     /**
      * Executa uma tarefa do SDD com contexto completo (Spec + Plan + Task)
@@ -176,16 +180,18 @@ public class SddTaskExecutorService {
 
         AgentExecution execution = executorAgentService.executeTask(context);
 
-        buildBockerImagesFromRopositories(execution, userStory);
+        List<BuildCodeRepoLogDTO> buildCodeRepoLogDTOS = fixCodeAfterBuildDockerImagesFromRopositories(execution, userStory, context);
 
         log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] FINALIZADO execução de implementação id={}", implId);
 
         return execution;
     }
 
-    private void buildBockerImagesFromRopositories(AgentExecution execution, UserStory userStory) throws Exception {
+    private List<BuildCodeRepoLogDTO> fixCodeAfterBuildDockerImagesFromRopositories(AgentExecution execution, UserStory userStory, String codigo) throws Exception {
 
         log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de implementação concluída: {} - {} passos", execution.getStatus(), execution.getStepCount());
+
+        List<BuildCodeRepoLogDTO> listBuildCodeRepoLogDTO = new ArrayList<>();
 
         ConversationSession conversationSession = null;
         Project project = null;
@@ -204,52 +210,73 @@ public class SddTaskExecutorService {
             log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] repositório {}-{} - {} - {}", repo.getId(), repo.getName(), repo.getPath(), repo.getUrl());
 
             final int maxAttempts = 1;
+            int attempt = 0;
             ProcessBuilderReturnDTO executeDockerBuildImage = null;
 
             do{
 
-                log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Validando repositório: {}", repo.getName());
+                log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Tentativa {}/{} de build para repositório {}", attempt, maxAttempts, repo.getName());
 
-                for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                executeDockerBuildImage = executeDockerBuildImage(repo.getName());
 
-                    log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Tentativa {}/{} de build para repositório {}", attempt, maxAttempts, repo.getName());
-
-                    executeDockerBuildImage = executeDockerBuildImage(repo.getName());
-
-                    if (executeDockerBuildImage.isOk()) {
-                        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Build validado com sucesso para repositório {} na tentativa {}", repo.getName(), attempt);
-                        break;
-                    }
-
-                    log.warn("[SDD_TASK_EXECUTOR_SDD_IMPL] Falha na tentativa {}/{} para repositório {}.", attempt, maxAttempts, repo.getName());
-                    log.debug("{}", executeDockerBuildImage.getOutput());
-
-                    if (!executeDockerBuildImage.isOk()) {
-                        log.error("[SDD_TASK_EXECUTOR_SDD_IMPL] Executando a correção baseado no log de erro {}", repo.getName());
-
-                        String retryPrompt = """
-                        Você é um arquiteto de software FullStack nível Sênior.
-                        Este é o log de erro ao subir o container. Execute as correções no códido.
-                        {logErro}
-                        """;
-
-                        PromptTemplate promptTemplate = new PromptTemplate(retryPrompt);
-
-                        String promptFinal = promptTemplate.create(Map.of(
-                                "logErro", executeDockerBuildImage.getOutput()
-                        )).getContents();
-
-                        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Prompt do Retry : {}", promptFinal);
-
-                        //AgentExecution retryExecution = executorAgentService.executeTask(promptFinal);
-                        //log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de retry : {} - {} passos", retryExecution.getStatus(), execution.getStepCount());
-                    }
-
+                if (executeDockerBuildImage.isOk()) {
+                    log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Build validado com sucesso para repositório {} na tentativa {}", repo.getName(), attempt);
+                    break;
                 }
 
-            } while (!executeDockerBuildImage.isOk() && maxAttempts > 0);
+                log.warn("[SDD_TASK_EXECUTOR_SDD_IMPL] Falha na tentativa {}/{} para repositório {}.", attempt, maxAttempts, repo.getName());
+                log.debug("{}", executeDockerBuildImage.getOutput());
+
+                if (!executeDockerBuildImage.isOk()) {
+                    log.error("[SDD_TASK_EXECUTOR_SDD_IMPL] Executando a correção baseado no log de erro {}", repo.getName());
+
+                    String retryPrompt = """
+                    Você é um arquiteto de software FullStack nível Sênior.
+                    O Conteúdo abaixo contem:
+                    - CODIGO COM O ERRO gerado pelas especificações SDD-Spec Driven Developement
+                    - LOG DE ERRO ao subir o container. 
+                    Execute as correções no códido baseado no log de erro.
+                    
+                    =========== LOG DE ERRO ===========
+                    {logErro}
+                    =========== CODIGO COM O ERRO ===========
+                    {codigoComErro}
+                    """;
+
+                    PromptTemplate promptTemplate = new PromptTemplate(retryPrompt);
+
+                    String promptFinal = promptTemplate.create(Map.of(
+                            "logErro", executeDockerBuildImage.getOutput(),
+                            "codigoComErro", codigo
+                    )).getContents();
+
+                    log.debug("[SDD_TASK_EXECUTOR_SDD_IMPL] Prompt do Retry :");
+                    log.debug("{}", promptFinal);
+
+                    String codigoCorrigido = chatClientBuilder.build().prompt()
+                            .user(promptFinal)
+                            .call()
+                            .content();
+
+                    log.debug("[SDD_TASK_EXECUTOR_SDD_IMPL] Código corrigido:");
+                    log.debug("{}", codigoCorrigido);
+
+                    listBuildCodeRepoLogDTO.add(BuildCodeRepoLogDTO.builder().dodeRepo(repo).ok(executeDockerBuildImage.isOk()).logErro(executeDockerBuildImage.getOutput()).codigoOriginal(codigo).codigoCorrigido(codigoCorrigido).build());
+
+                    codigo = codigoCorrigido;
+
+                    //AgentExecution retryExecution = executorAgentService.executeTask(promptFinal);
+                    //log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Execução de retry : {} - {} passos", retryExecution.getStatus(), execution.getStepCount());
+                }
+
+            } while (!executeDockerBuildImage.isOk() && attempt++ < maxAttempts);
 
         }
+
+        log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Finalizada a etapa de build das imagens Docker de todos os repositórios");
+
+        return listBuildCodeRepoLogDTO;
+
     }
 
     /**
@@ -318,6 +345,7 @@ public class SddTaskExecutorService {
     public ProcessBuilderReturnDTO executeDockerBuildImage(String imageName) {
 
         ProcessBuilderReturnDTO ret = new ProcessBuilderReturnDTO();
+        ret.setImageName(imageName);
 
         try {
 

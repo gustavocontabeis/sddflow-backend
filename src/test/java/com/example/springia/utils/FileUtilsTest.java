@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,6 +105,28 @@ class FileUtilsTest {
     }
 
     @Test
+    void joinFileContentsShouldReadFilesFromDirectoriesRecursively() throws IOException {
+        Path dir = Files.createDirectories(tempDir.resolve("config"));
+        Path nestedDir = Files.createDirectories(dir.resolve("nested"));
+        Path first = dir.resolve("a.txt");
+        Path second = nestedDir.resolve("b.txt");
+        Path directFile = tempDir.resolve("direct.txt");
+
+        Files.writeString(first, "valor-a");
+        Files.writeString(second, "valor-b");
+        Files.writeString(directFile, "valor-direct");
+
+        String result = FileUtils.joinFileContents(new Path[]{dir, directFile});
+
+        assertTrue(result.contains("Arquivo: " + first));
+        assertTrue(result.contains("valor-a"));
+        assertTrue(result.contains("Arquivo: " + second));
+        assertTrue(result.contains("valor-b"));
+        assertTrue(result.contains("Arquivo: " + directFile));
+        assertTrue(result.contains("valor-direct"));
+    }
+
+    @Test
     void joinFileContentsShouldSupportStringPaths() throws IOException {
         Path one = tempDir.resolve("app.properties");
         Path two = tempDir.resolve("pom.xml");
@@ -120,6 +143,18 @@ class FileUtilsTest {
         assertTrue(result.contains("server.port=8080"));
         assertTrue(result.contains("Arquivo: " + two));
         assertTrue(result.contains("<project></project>"));
+    }
+
+    //@Test
+    void xxx() throws IOException {
+        Path dir = Paths.get("/tmp/tarefas-backend/src/main/java/br/com/dev/gustavo/tarefas");
+        Path dir1 = Paths.get("/tmp/tarefas-backend/src/main/resources/META-INF/resources");
+        Path directFile = Paths.get("/tmp/tarefas-backend/src/main/resources/application.properties");
+
+        String result = FileUtils.joinFileContents(new Path[]{dir, dir1, directFile});
+
+        System.out.println(result);
+
     }
 }
 

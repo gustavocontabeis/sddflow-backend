@@ -45,6 +45,7 @@ public class DiscoveryService {
     public String dicovery(Path path){
 
         List<String> strings = FileUtils.listFilesNames(path);
+
         if(!strings.isEmpty()){
             log.info("");
             log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");

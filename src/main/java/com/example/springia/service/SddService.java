@@ -163,7 +163,7 @@ public class SddService {
 
         implSddService.save(ImplSdd.builder().id(null).status(SpecificationDocumentStatus.IN_PROGRESS).userStory(userStory).content(content).build());
 
-        log.info("IMPL gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
+        log.info("[CREATE IMPL] gerada e salva com sucesso para userStoryId={}, tokenLength={}", userStoryId, content.split(" ").length);
 
         return content;
     }
