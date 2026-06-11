@@ -2,6 +2,9 @@ package com.example.springia.service;
 
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
+import com.example.springia.model.CodeRepo;
+import com.example.springia.model.Project;
+import com.example.springia.repository.ProjectRepository;
 import com.example.springia.utils.FileUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
@@ -28,12 +31,79 @@ public class DiscoveryService {
 
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
+    private final ProjectRepository projectRepository;
 
     public DiscoveryService(
-            ChatClient.Builder chatClientBuilder
+            ChatClient.Builder chatClientBuilder,
+            ProjectRepository projectRepository
     ) {
         this.chatClient = chatClientBuilder.build();
         this.objectMapper = createObjectMapper();
+        this.projectRepository = projectRepository;
+    }
+
+    public String answerProjectQuestion(Long projectId, String question) {
+        if (projectId == null) {
+            throw new IllegalArgumentException("projectId e obrigatorio");
+        }
+        if (question == null || question.isBlank()) {
+            throw new IllegalArgumentException("question e obrigatoria");
+        }
+
+        Project project = projectRepository.findById(projectId).orElse(null);
+        if (project == null) {
+            return null;
+        }
+
+        StringBuilder reposContext = new StringBuilder();
+        if (project.getRepos() != null && !project.getRepos().isEmpty()) {
+            for (CodeRepo repo : project.getRepos()) {
+                reposContext.append("\n--- REPOSITORIO ---\n")
+                        .append("Nome: ").append(repo.getName()).append("\n")
+                        .append("Tipo: ").append(repo.getType()).append("\n")
+                        .append("URL: ").append(repo.getUrl()).append("\n")
+                        .append("Branch: ").append(repo.getBranch()).append("\n")
+                        .append("Constitution: ").append(repo.getConstitution() != null ? repo.getConstitution() : "[vazio]").append("\n")
+                        .append("Structure: ").append(repo.getStructure() != null ? repo.getStructure() : "[vazio]").append("\n");
+            }
+        } else {
+            reposContext.append("[Projeto sem repositorios cadastrados]");
+        }
+
+        String prompt = """
+                Voce e um arquiteto de software senior.
+                Responda a pergunta do usuario usando apenas o contexto do projeto informado.
+                Se a informacao nao estiver no contexto, diga explicitamente que nao foi encontrada.
+
+                DADOS DO PROJETO:
+                - ID: %d
+                - Sigla: %s
+                - Nome: %s
+                - Constitution:
+                %s
+
+                DADOS DOS REPOSITORIOS:
+                %s
+
+                PERGUNTA:
+                %s
+                """.formatted(
+                project.getId(),
+                project.getSigla() != null ? project.getSigla() : "[vazio]",
+                project.getName() != null ? project.getName() : "[vazio]",
+                project.getConstitution() != null ? project.getConstitution() : "[vazio]",
+                reposContext,
+                question
+        );
+
+        String content = chatClient.prompt()
+                .user(prompt)
+                .call()
+                .content();
+
+        return (content == null || content.isBlank())
+                ? "Nao foi possivel gerar uma resposta no momento."
+                : content;
     }
 
     static ObjectMapper createObjectMapper() {
