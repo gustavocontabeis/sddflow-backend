@@ -1,5 +1,6 @@
-package com.example.springia.agent.tool;
+package com.example.springia.agent.tool.files;
 
+import com.example.springia.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -10,7 +11,7 @@ import java.util.Map;
  * Ferramenta para criar diretórios
  */
 @Slf4j
-public class CreateDirectoryTool implements Tool {
+    public class CreateDirectoryTool implements Tool {
 
     private final String basePath;
 

@@ -2,10 +2,22 @@ package com.example.springia.service;
 
 import com.example.springia.agent.loop.AgentExecution;
 import com.example.springia.agent.loop.AgentLoop;
-import com.example.springia.agent.tool.*;
+import com.example.springia.agent.tool.ExecuteCommandTool;
+import com.example.springia.agent.tool.GitHubListRepositoriesTool;
+import com.example.springia.agent.tool.ReadFileTool;
+import com.example.springia.agent.tool.ToolRegistry;
+import com.example.springia.agent.tool.files.CreateDirectoryTool;
+import com.example.springia.agent.tool.files.CreateFileTool;
+import com.example.springia.agent.tool.files.GrepFilesTool;
+import com.example.springia.agent.tool.files.ListFilesTool;
+import com.example.springia.agent.tool.github.GitHubCloneRepositoryTool;
+import com.example.springia.agent.tool.github.GitHubCreateCommitTool;
+import com.example.springia.agent.tool.github.GitHubCreatePullRequestTool;
+import com.example.springia.agent.tool.github.GitHubDiscoveryTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -55,6 +67,7 @@ public class ExecutorAgentService {
         toolRegistry.registerTool(new CreateDirectoryTool(basePath));
         toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
+        toolRegistry.registerTool(new GrepFilesTool(basePath));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
         toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));
         toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));

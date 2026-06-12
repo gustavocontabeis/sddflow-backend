@@ -71,10 +71,13 @@ public class DiscoveryService {
         }
 
         String prompt = """
-                Voce e um arquiteto de software senior.
-                Responda a pergunta do usuario usando apenas o contexto do projeto informado.
-                Se a informacao nao estiver no contexto, diga explicitamente que nao foi encontrada.
-
+                Voce e um arquiteto de software senior e analista de requisitos nivel sênior.
+                Responda a pergunta do usuario usando o contexto do projeto.
+                Voce tem condições de:
+                  - responder a perguntas do contexto do projeto.
+                  - criar soluções consultando o modelo ou incrementando o modelo se necessário.
+                Analise os diagramas de classes e NA RESPOSTA liste as classes e os atributos envolvidos na pergunta.
+       
                 DADOS DO PROJETO:
                 - ID: %d
                 - Sigla: %s
@@ -87,6 +90,7 @@ public class DiscoveryService {
 
                 PERGUNTA:
                 %s
+                
                 """.formatted(
                 project.getId(),
                 project.getSigla() != null ? project.getSigla() : "[vazio]",
@@ -95,6 +99,9 @@ public class DiscoveryService {
                 reposContext,
                 question
         );
+
+        log.info("[Perguntas]: {}", prompt);
+
 
         String content = chatClient.prompt()
                 .user(prompt)

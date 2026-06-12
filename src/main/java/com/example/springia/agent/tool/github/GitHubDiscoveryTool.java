@@ -1,5 +1,6 @@
-package com.example.springia.agent.tool;
+package com.example.springia.agent.tool.github;
 
+import com.example.springia.agent.tool.Tool;
 import com.example.springia.dto.CloneRepositoryRequest;
 import com.example.springia.service.GitHubService;
 import lombok.RequiredArgsConstructor;

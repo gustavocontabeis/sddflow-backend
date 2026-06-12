@@ -1,5 +1,6 @@
-package com.example.springia.agent.tool;
+package com.example.springia.agent.tool.github;
 
+import com.example.springia.agent.tool.Tool;
 import com.example.springia.dto.PullRequestRequest;
 import com.example.springia.dto.PullRequestResponse;
 import com.example.springia.service.GitHubService;
