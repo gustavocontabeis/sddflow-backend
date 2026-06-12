@@ -20,6 +20,10 @@ public class PromptService {
         log.info("[SERVICE] findAll Prompt");
         List<Prompt> result = promptRepository.findAll();
         log.info("[SERVICE] findAll Prompt total={}", result.size());
+        System.out.println("");
+        for (Prompt prompt : result) {
+            System.out.println(String.format("INSERT INTO public.prompt (id, prompt_key, content) VALUES (nextval('prompt_seq'), '%s', '%s');\n", prompt.getKey(), prompt.getContent()));
+        }
         return result;
     }
 
