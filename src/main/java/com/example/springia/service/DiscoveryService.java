@@ -61,6 +61,7 @@ public class DiscoveryService {
                 reposContext.append("\n--- REPOSITORIO ---\n")
                         .append("Nome: ").append(repo.getName()).append("\n")
                         .append("Tipo: ").append(repo.getType()).append("\n")
+                        .append("Diretório: ").append(repo.getPath().replaceAll("\\d+$", "")).append("\n")
                         .append("URL: ").append(repo.getUrl()).append("\n")
                         .append("Branch: ").append(repo.getBranch()).append("\n")
                         .append("Constitution: ").append(repo.getConstitution() != null ? repo.getConstitution() : "[vazio]").append("\n")
@@ -100,7 +101,7 @@ public class DiscoveryService {
                 question
         );
 
-        log.info("[Perguntas]: {}", prompt);
+        log.info("[Perguntas]: {}\n", prompt);
 
 
         String content = chatClient.prompt()
