@@ -78,6 +78,7 @@ public class DiscoveryService {
                   - responder a perguntas do contexto do projeto.
                   - criar soluções consultando o modelo ou incrementando o modelo se necessário.
                 Analise os diagramas de classes e NA RESPOSTA liste as classes e os atributos envolvidos na pergunta.
+                Utilize as tools e liste os arquivos fonte relacionados a esta funcionalidade.
        
                 DADOS DO PROJETO:
                 - ID: %d
