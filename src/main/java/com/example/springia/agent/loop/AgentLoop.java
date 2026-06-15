@@ -59,6 +59,7 @@ public class AgentLoop {
             while (stepCount < maxSteps) {
                 stepCount++;
                 log.info("[AGENT] Passo {} de {}", stepCount, maxSteps);
+                //log.debug("[AGENT] Prompt: {}", context);
 
                 // Chamada ao LLM para decidir ação
                 String llmResponse = callLLM(context);
@@ -305,6 +306,10 @@ public class AgentLoop {
 
         try {
             log.info("[AGENT] Executando tool: {} com {} parâmetros", toolName, params.size());
+            Set<Map.Entry<String, String>> entries = params.entrySet();
+            for (Map.Entry<String, String> entry : entries)
+                log.info("        {} > {}", entry.getKey(), entry.getValue());
+
             String result = tool.execute(params);
             log.debug("[AGENT] Tool {} executada com sucesso", toolName);
             return result;

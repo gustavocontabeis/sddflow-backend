@@ -94,7 +94,7 @@ public class GrepFilesTool implements Tool {
                             result.append(fileMatches);
                         }
                     } catch (IOException e) {
-                        log.warn("[TOOL] Não foi possível ler arquivo: {}", file, e);
+                        log.warn("[TOOL] grep_files: Não foi possível ler arquivo: {}", file, e);
                     }
                 });
         }
