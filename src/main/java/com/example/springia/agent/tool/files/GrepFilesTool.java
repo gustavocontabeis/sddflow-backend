@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,7 +58,7 @@ public class GrepFilesTool implements Tool {
         boolean ignoreCase = Boolean.parseBoolean(params.getOrDefault("ignore_case", "false"));
 
         String fullPath = dirPath.isBlank() ? basePath : basePath + "/" + dirPath;
-        Path rootPath = Paths.get(fullPath.replace("/tmp/tmp/", "/tmp/"));
+        Path rootPath = Paths.get(fullPath.replace("//", "/").replace("/tmp/tmp/", "/tmp/"));
 
         if (!Files.exists(rootPath)) {
             throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);
@@ -72,10 +73,19 @@ public class GrepFilesTool implements Tool {
         AtomicInteger totalMatches = new AtomicInteger(0);
         StringBuilder result = new StringBuilder();
 
+        String extensoes = fileExtension;
+
+
         try (Stream<Path> walk = Files.walk(rootPath)) {
             walk.filter(Files::isRegularFile)
-                .filter(p -> fileExtension.isBlank() || p.toString().endsWith(fileExtension))
-                .sorted()
+                .filter(p -> {
+                String name = p.getFileName().toString().toLowerCase();
+                return Arrays.stream(extensoes.split(","))
+                        .map(String::trim)
+                        .map(String::toLowerCase)
+                        .anyMatch(name::endsWith);
+            })                .sorted()
+
                 .forEach(file -> {
                     try {
                         var lines = Files.readAllLines(file);
