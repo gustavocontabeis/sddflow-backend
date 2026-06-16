@@ -5,6 +5,7 @@ import com.example.springia.dto.PromptAuditResponse;
 import com.example.springia.model.*;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.UserStoryRepository;
+import com.example.springia.serviceagent.SddPlanServiceAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,9 @@ public class SddService {
 
     @Autowired
     private PlanSddService planSddService;
+
+    @Autowired
+    private SddPlanServiceAgent planSddAgentService;
 
     @Autowired
     private TaskSddService taskSddService;
@@ -99,7 +103,11 @@ public class SddService {
 
         String plan = chatService.chat(prompt);
 
-        planSddService.savePlan(userStory, plan);
+        String newPlan = planSddAgentService.validarRepositorio(conversationSession.getProject(), plan);
+
+        log.info("PLAN newPlanLength={}, newPlan:={}", newPlan.length(), newPlan);
+
+        planSddService.savePlan(userStory, newPlan);
 
         log.info("PLAN gerada e salva com sucesso para userStoryId={}, specLength={}", userStoryId, plan.length());
 
@@ -231,7 +239,8 @@ public class SddService {
         return """
                 Você é um analista sênior de prompts e rastreamento de erros.
 
-                Objetivo: ler a pergunta e vasculhar quais fontes/prompts provavelmente gerou o resultado incorreto.
+                Objetivo: ler a pergunta e vasculhar quais prompts geraram aquele resultado.
+                Se o prompt não gerou este resultado diga "Não há mensões no prompt para gerar este resultado."
                 Compare a pergunta com todas as fontes abaixo e diga exatamente em quais fontes estão as instruções mais prováveis.
 
                 Regras de resposta:

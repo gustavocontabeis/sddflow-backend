@@ -4,6 +4,7 @@ import com.example.springia.model.PlanSdd;
 import com.example.springia.model.UserStory;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
 import com.example.springia.repository.PlanSddRepository;
+import com.example.springia.serviceagent.SddPlanServiceAgent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class PlanSddService {
+
+    private final SddPlanServiceAgent agent;
 
     private final PlanSddRepository planSddRepository;
 
