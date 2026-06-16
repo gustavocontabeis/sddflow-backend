@@ -1,6 +1,7 @@
 package com.example.springia.agent.tool.files;
 
 import com.example.springia.agent.tool.Tool;
+import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ public class ListFilesTool implements Tool {
         String dirPath = params.getOrDefault("directory_path", "");
 
         String fullPath = dirPath.isBlank() ? basePath : basePath + "/" + dirPath;
-        var path = Paths.get(fullPath.replace("/tmp/tmp/", "/tmp/"));
+        var path = Paths.get(FileUtils.fixPath(fullPath));
 
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);

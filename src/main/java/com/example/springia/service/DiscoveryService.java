@@ -77,9 +77,9 @@ public class DiscoveryService {
                 Voce tem condições de:
                   - responder a perguntas do contexto do projeto.
                   - criar soluções consultando o modelo ou incrementando o modelo se necessário.
-                Analise os diagramas de classes e NA RESPOSTA liste as classes e os atributos envolvidos na pergunta.
-                Utilize as tools e liste os arquivos fonte relacionados a esta funcionalidade.
-       
+                  - Liste os ítens envolvidos na pergunta:
+                    - path do repositório | nome da classe | nome do atributo
+                
                 DADOS DO PROJETO:
                 - ID: %d
                 - Sigla: %s
@@ -103,7 +103,6 @@ public class DiscoveryService {
         );
 
         log.info("[Perguntas]: {}\n", prompt);
-
 
         String content = chatClient.prompt()
                 .user(prompt)

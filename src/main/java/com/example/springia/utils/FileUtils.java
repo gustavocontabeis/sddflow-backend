@@ -135,4 +135,8 @@ public class FileUtils {
                     }
                 });
     }
+
+    public static String fixPath(String fullPath) {
+        return fullPath.replace("//", "/").replace("/tmp/tmp/", "/tmp/");
+    }
 }

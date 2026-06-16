@@ -1,6 +1,7 @@
 package com.example.springia.agent.tool.files;
 
 import com.example.springia.agent.tool.Tool;
+import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -45,7 +46,7 @@ import java.util.Map;
         }
 
         String fullPath = basePath + "/" + dirPath;
-        var path = Paths.get(fullPath.replace("/tmp/tmp/", "/tmp/") );
+        var path = Paths.get(FileUtils.fixPath(fullPath));
 
         Files.createDirectories(path);
 

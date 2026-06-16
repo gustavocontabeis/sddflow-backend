@@ -1,6 +1,7 @@
 package com.example.springia.agent.tool.files;
 
 import com.example.springia.agent.tool.Tool;
+import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -58,7 +59,7 @@ public class GrepFilesTool implements Tool {
         boolean ignoreCase = Boolean.parseBoolean(params.getOrDefault("ignore_case", "false"));
 
         String fullPath = dirPath.isBlank() ? basePath : basePath + "/" + dirPath;
-        Path rootPath = Paths.get(fullPath.replace("//", "/").replace("/tmp/tmp/", "/tmp/"));
+        Path rootPath = Paths.get(FileUtils.fixPath(fullPath));
 
         if (!Files.exists(rootPath)) {
             throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);
