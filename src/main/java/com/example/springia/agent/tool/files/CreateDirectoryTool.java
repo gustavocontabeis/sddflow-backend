@@ -50,8 +50,8 @@ import java.util.Map;
 
         Files.createDirectories(path);
 
-        log.info("[TOOL] Diretório criado: {}", fullPath);
-        return "Diretório criado com sucesso: " + dirPath;
+        log.info("[TOOL] Diretório criado: {}", path);
+        return "Diretório criado com sucesso: " + path;
     }
 }
 

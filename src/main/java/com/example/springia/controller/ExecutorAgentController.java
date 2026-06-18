@@ -42,11 +42,11 @@ public class ExecutorAgentController {
      *   -H "Content-Type: application/json" \
      *   -d '{
      *     "taskDescription": "Crie arquivos de teste-01.txt a teste-10.txt em clone-repo com conteúdo Hello World",
-     *     "basePath": "springia-workspace"
+     *     "basePath": "/tmp"
      *   }'
      * }</pre>
      */
-    //@PostMapping("/execute")
+    @PostMapping("/execute")
     public ResponseEntity<ExecutorAgentResponse> execute(@RequestBody ExecutorAgentRequest request) {
         log.info("[AGENT_CONTROLLER] POST /execute taskDescription_length={}",
             request.getTaskDescription() != null ? request.getTaskDescription().length() : 0);

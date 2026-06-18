@@ -59,8 +59,8 @@ public class CreateFileTool implements Tool {
         // Cria o arquivo
         Files.writeString(path, content);
 
-        log.info("[TOOL] Arquivo criado: {}", fullPath);
-        return "Arquivo criado com sucesso: " + filePath;
+        log.info("[TOOL] Arquivo criado: {}", path);
+        return "Arquivo criado com sucesso: " + path;
     }
 }
 

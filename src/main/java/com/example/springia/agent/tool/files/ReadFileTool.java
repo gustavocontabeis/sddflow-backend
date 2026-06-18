@@ -52,7 +52,7 @@ public class ReadFileTool implements Tool {
         }
 
         String content = Files.readString(path);
-        log.info("[TOOL] Arquivo lido: {} ({}bytes)", fullPath, content.length());
+        log.info("[TOOL] Arquivo lido: {} ({}bytes)", path, content.length());
         return content;
     }
 }
