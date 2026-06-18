@@ -1,10 +1,11 @@
 package com.example.springia.service;
 
-import com.example.springia.agent.tool.files.GrepFilesTool;
+import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
+import com.example.springia.repository.CodeRepoRepository;
 import com.example.springia.repository.ProjectRepository;
 import com.example.springia.utils.FileUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,14 +34,17 @@ public class DiscoveryService {
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
     private final ProjectRepository projectRepository;
+    private final CodeRepoRepository codeRepoRepository;
 
     public DiscoveryService(
             ChatClient.Builder chatClientBuilder,
-            ProjectRepository projectRepository
+            ProjectRepository projectRepository,
+            CodeRepoRepository codeRepoRepository
     ) {
         this.chatClient = chatClientBuilder.build();
         this.objectMapper = createObjectMapper();
         this.projectRepository = projectRepository;
+        this.codeRepoRepository = codeRepoRepository;
     }
 
     public String answerProjectQuestion(Long projectId, String question) {
@@ -56,9 +60,12 @@ public class DiscoveryService {
             return null;
         }
 
+        List<CodeRepo> repos = codeRepoRepository.findByProjectId(projectId);
+        project.setRepos(repos);
+
         StringBuilder reposContext = new StringBuilder();
-        if (project.getRepos() != null && !project.getRepos().isEmpty()) {
-            for (CodeRepo repo : project.getRepos()) {
+        if (repos != null && !repos.isEmpty()) {
+            for (CodeRepo repo : repos) {
                 reposContext.append("\n--- REPOSITORIO ---\n")
                         .append("Nome: ").append(repo.getName()).append("\n")
                         .append("Tipo: ").append(repo.getType()).append("\n")
@@ -74,17 +81,16 @@ public class DiscoveryService {
 
         String prompt = """
                 Voce e um arquiteto de software senior e analista de requisitos nivel sênior.
-                Responda a pergunta do usuario usando o contexto do projeto.
-                Voce tem condições de:
-                  - responder a perguntas do contexto do projeto.
-                  - criar soluções consultando o modelo ou incrementando o modelo se necessário.
-                  - Liste os ítens envolvidos na pergunta. utilize a tool para isso:
-                    - path do repositório | nome da classe | nome do atributo
-                
-                A tool grep_files tem os parametros:
-                 - "pattern" o nome do atributo buscado
-                 - "file_extension" como arquivos de acordo com a linguagem do repositório. Ex: ".java, .js, .html".
-                 - "ignore_case" true 
+                Responda a pergunta do usuario usando o contexto do projeto e evidências do código-fonte.
+                Use SEMPRE a tool discovery_tool antes de responder quando a pergunta depender dos arquivos do projeto.
+                A discovery_tool deve ser chamada com:
+                 - projectId = %d
+                 - question = pergunta do usuario
+
+                A resposta final deve:
+                 - informar objetivamente se encontrou ou nao evidência no código
+                 - citar classe, atributo e arquivo(s) encontrados quando houver
+                 - nao inventar nada além do que estiver no contexto ou no retorno da tool
                 
                 DADOS DO PROJETO:
                 - ID: %d
@@ -101,6 +107,7 @@ public class DiscoveryService {
                 
                 """.formatted(
                 project.getId(),
+                project.getId(),
                 project.getSigla() != null ? project.getSigla() : "[vazio]",
                 project.getName() != null ? project.getName() : "[vazio]",
                 project.getConstitution() != null ? project.getConstitution() : "[vazio]",
@@ -110,7 +117,7 @@ public class DiscoveryService {
 
         log.info("[Perguntas]: {}\n", prompt);
 
-        String content = chatClient.prompt().tools(new GrepFilesTool(project))
+        String content = chatClient.prompt().tools(new DiscoveryTool(projectRepository, codeRepoRepository, chatClient))
                 .user(prompt)
                 .call()
                 .content();

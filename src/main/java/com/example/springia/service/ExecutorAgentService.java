@@ -3,6 +3,7 @@ package com.example.springia.service;
 import com.example.springia.agent.loop.AgentExecution;
 import com.example.springia.agent.loop.AgentLoop;
 import com.example.springia.agent.tool.ExecuteCommandTool;
+import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.agent.tool.GitHubListRepositoriesTool;
 import com.example.springia.agent.tool.ReadFileTool;
 import com.example.springia.agent.tool.ToolRegistry;
@@ -15,6 +16,8 @@ import com.example.springia.agent.tool.github.GitHubCreateCommitTool;
 import com.example.springia.agent.tool.github.GitHubCreatePullRequestTool;
 import com.example.springia.agent.tool.github.GitHubDiscoveryTool;
 import com.example.springia.model.Project;
+import com.example.springia.repository.CodeRepoRepository;
+import com.example.springia.repository.ProjectRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,8 @@ public class ExecutorAgentService {
     private final ToolRegistry toolRegistry;
     private final AgentLoop agentLoop;
     private final GitHubService gitHubService;
+    private final ProjectRepository projectRepository;
+    private final CodeRepoRepository codeRepoRepository;
 
 
     /**
@@ -41,8 +46,12 @@ public class ExecutorAgentService {
     private String basePath;
 
     public ExecutorAgentService(ChatClient.Builder chatClientBuilder,
-                                GitHubService gitHubService) {
+                                GitHubService gitHubService,
+                                ProjectRepository projectRepository,
+                                CodeRepoRepository codeRepoRepository) {
         this.gitHubService = gitHubService;
+        this.projectRepository = projectRepository;
+        this.codeRepoRepository = codeRepoRepository;
         this.chatClient = chatClientBuilder.build();
         this.toolRegistry = new ToolRegistry();
 
@@ -68,6 +77,7 @@ public class ExecutorAgentService {
         toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
         toolRegistry.registerTool(new GrepFilesTool(selectedProject));
+        toolRegistry.registerTool(new DiscoveryTool(projectRepository, codeRepoRepository, chatClient));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
         toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));
         toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));
