@@ -77,8 +77,10 @@ public class SddTaskExecutorService {
 
         log.info("[SDD_TASK_EXECUTOR] Contexto montado: {} bytes", context.length());
 
+        Project project = resolveProjectFromUserStory(userStory);
+
         // Executa o agent com o contexto
-        AgentExecution execution = executorAgentService.executeTask(context);
+        AgentExecution execution = executorAgentService.executeTask(context, project);
 
         log.info("[SDD_TASK_EXECUTOR] Execução concluída: {} - {} passos",
                 execution.getStatus(), execution.getStepCount());
@@ -174,11 +176,13 @@ public class SddTaskExecutorService {
             throw new IllegalArgumentException("ImplSdd sem UserStory associada");
         }
 
+        Project project = resolveProjectFromUserStory(userStory);
+
         String context = buildImplExecutionContext(userStory, implSdd);
 
         log.info("[SDD_TASK_EXECUTOR_SDD_IMPL] Contexto de implementação montado: {} bytes", context.length());
 
-        AgentExecution execution = executorAgentService.executeTask(context);
+        AgentExecution execution = executorAgentService.executeTask(context, project);
 
         List<BuildCodeRepoLogDTO> buildCodeRepoLogDTOS = fixCodeAfterBuildDockerImagesFromRopositories(execution, userStory, context);
 
@@ -323,6 +327,13 @@ public class SddTaskExecutorService {
         """);
 
         return context.toString();
+    }
+
+    private Project resolveProjectFromUserStory(UserStory userStory) {
+        if (userStory == null || userStory.getConversationSession() == null || userStory.getConversationSession().getProject() == null) {
+            throw new IllegalArgumentException("UserStory sem projeto associado para execução do agente");
+        }
+        return userStory.getConversationSession().getProject();
     }
 
     /**

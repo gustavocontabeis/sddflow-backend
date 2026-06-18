@@ -14,6 +14,7 @@ import com.example.springia.agent.tool.github.GitHubCloneRepositoryTool;
 import com.example.springia.agent.tool.github.GitHubCreateCommitTool;
 import com.example.springia.agent.tool.github.GitHubCreatePullRequestTool;
 import com.example.springia.agent.tool.github.GitHubDiscoveryTool;
+import com.example.springia.model.Project;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
@@ -33,15 +34,14 @@ public class ExecutorAgentService {
     private final AgentLoop agentLoop;
     private final GitHubService gitHubService;
 
+
     /**
      * Diretório base para operações de filesystem (pode ser configurado)
      */
     private String basePath;
 
-    public ExecutorAgentService(
-            ChatClient.Builder chatClientBuilder,
-            GitHubService gitHubService
-    ) {
+    public ExecutorAgentService(ChatClient.Builder chatClientBuilder,
+                                GitHubService gitHubService) {
         this.gitHubService = gitHubService;
         this.chatClient = chatClientBuilder.build();
         this.toolRegistry = new ToolRegistry();
@@ -50,7 +50,7 @@ public class ExecutorAgentService {
         this.basePath = resolveBasePath(null);
 
         // Registra todas as ferramentas disponíveis
-        registerTools();
+        registerTools(null);
 
         // Cria o agent loop com máximo de 15 passos
         this.agentLoop = new AgentLoop(this.chatClient, this.toolRegistry, 30);
@@ -61,13 +61,13 @@ public class ExecutorAgentService {
     /**
      * Registra todas as ferramentas disponíveis para o agente
      */
-    private void registerTools() {
+    private void registerTools(Project selectedProject) {
         toolRegistry.registerTool(new CreateFileTool(basePath));
         toolRegistry.registerTool(new ReadFileTool(basePath));
         toolRegistry.registerTool(new CreateDirectoryTool(basePath));
         toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
-        toolRegistry.registerTool(new GrepFilesTool(basePath));
+        toolRegistry.registerTool(new GrepFilesTool(selectedProject));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
         toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));
         toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));
@@ -80,6 +80,14 @@ public class ExecutorAgentService {
      * O agent usará as tools para executar ações no filesystem
      */
     public AgentExecution executeTask(String taskDescription) throws Exception {
+        return executeTask(taskDescription, null);
+    }
+
+    /**
+     * Executa o agent com o input fornecido para um projeto selecionado
+     */
+    public AgentExecution executeTask(String taskDescription, Project project) throws Exception {
+        registerTools(project);
         log.info("[EXECUTOR_AGENT] Iniciando execução de tarefa");
         return agentLoop.execute(taskDescription);
     }
@@ -91,7 +99,7 @@ public class ExecutorAgentService {
         this.basePath = resolveBasePath(basePath);
         log.info("[EXECUTOR_AGENT] basePath configurado como: {}", this.basePath);
         // Re-registra as tools com o novo caminho
-        registerTools();
+        registerTools(null);
     }
 
     private String resolveBasePath(String requestedBasePath) {

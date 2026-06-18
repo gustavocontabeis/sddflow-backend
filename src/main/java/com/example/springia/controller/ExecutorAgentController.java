@@ -2,7 +2,9 @@ package com.example.springia.controller;
 
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
+import com.example.springia.model.Project;
 import com.example.springia.service.ExecutorAgentService;
+import com.example.springia.service.ProjectService;
 import com.example.springia.service.TaskSddService;
 import com.example.springia.agent.loop.AgentExecution;
 import com.example.springia.model.TaskSdd;
@@ -29,6 +31,7 @@ public class ExecutorAgentController {
 
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
+    private final ProjectService projectService;
 
     /**
      * Executa o agent com uma descrição de tarefa
@@ -52,8 +55,10 @@ public class ExecutorAgentController {
             // basePath é lido do JSON e resolvido como subdiretório do temp do sistema.
             executorAgentService.setBasePath(request.getBasePath());
 
+            Project selectedProject = resolveProject(request.getProjectId());
+
             // Executa o agent
-            AgentExecution execution = executorAgentService.executeTask(request.getTaskDescription());
+            AgentExecution execution = executorAgentService.executeTask(request.getTaskDescription(), selectedProject);
 
             // Converte para DTO
             ExecutorAgentResponse response = mapExecutionToResponse(execution);
@@ -105,8 +110,11 @@ public class ExecutorAgentController {
             // basePath é lido do JSON e resolvido como subdiretório do temp do sistema.
             executorAgentService.setBasePath(basePath);
 
+            Long projectId = request != null ? request.getProjectId() : null;
+            Project selectedProject = resolveProject(projectId);
+
             // Executa o agent com o conteúdo da tarefa
-            AgentExecution execution = executorAgentService.executeTask(taskContent);
+            AgentExecution execution = executorAgentService.executeTask(taskContent, selectedProject);
 
             // Converte para DTO
             ExecutorAgentResponse response = mapExecutionToResponse(execution);
@@ -157,6 +165,18 @@ public class ExecutorAgentController {
                         .collect(Collectors.toList())
                     : null)
                 .build();
+    }
+
+    private Project resolveProject(Long projectId) {
+        if (projectId == null) {
+            return null;
+        }
+
+        Project project = projectService.findById(projectId);
+        if (project == null) {
+            throw new IllegalArgumentException("Projeto não encontrado: " + projectId);
+        }
+        return project;
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.springia.service;
 
+import com.example.springia.agent.tool.files.GrepFilesTool;
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
 import com.example.springia.model.CodeRepo;
@@ -77,8 +78,13 @@ public class DiscoveryService {
                 Voce tem condições de:
                   - responder a perguntas do contexto do projeto.
                   - criar soluções consultando o modelo ou incrementando o modelo se necessário.
-                  - Liste os ítens envolvidos na pergunta:
+                  - Liste os ítens envolvidos na pergunta. utilize a tool para isso:
                     - path do repositório | nome da classe | nome do atributo
+                
+                A tool grep_files tem os parametros:
+                 - "pattern" o nome do atributo buscado
+                 - "file_extension" como arquivos de acordo com a linguagem do repositório. Ex: ".java, .js, .html".
+                 - "ignore_case" true 
                 
                 DADOS DO PROJETO:
                 - ID: %d
@@ -104,7 +110,7 @@ public class DiscoveryService {
 
         log.info("[Perguntas]: {}\n", prompt);
 
-        String content = chatClient.prompt()
+        String content = chatClient.prompt().tools(new GrepFilesTool(project))
                 .user(prompt)
                 .call()
                 .content();

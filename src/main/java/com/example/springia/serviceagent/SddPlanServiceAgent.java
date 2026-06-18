@@ -23,13 +23,13 @@ public class SddPlanServiceAgent {
                 reposContext.append("\n--- REPOSITORIO ---\n")
                         .append("Nome: ").append(repo.getName()).append("\n")
                         .append("Tipo: ").append(repo.getType()).append("\n")
-                        .append("Diretório: ").append(repo.getPath().replaceAll("\\d+$", "")).append("\n")
+                        .append("Diretório absoluto: ").append(repo.getPath().replaceAll("\\d+$", "")).append("\n")
                         .append("Estrutura: ").append(repo.getStructure()).append("\n");
             }
         }
 
         String prompt = String.format("""
-                Garanta que a estrutura dos arquivos está dentro do(s) diretório(s) dos repositórios existentes.
+                Garanta que a estrutura dos arquivos seja criado dentro do "Diretório absoluto" dos repositórios existentes.
                 Retorne apenas o prompt original com as correções se necessário.
                 Altere somente o necessário.
                 --------------------- DIRETÓRIOS ---------------------
