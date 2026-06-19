@@ -32,6 +32,8 @@ public class CodeRepo {
     @Enumerated(EnumType.STRING)
     private CodeRepoType type;
 
+    private String extensoesDeArquivosFonte;
+
     @ToString.Exclude
     @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.DETACH)

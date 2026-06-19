@@ -32,7 +32,7 @@ public class ReadFileTool implements Tool {
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("file_path", "Caminho relativo do arquivo a ler (ex: src/main/java/MyClass.java)");
+        params.put("file_path", "Caminho absoluto do arquivo a ler");
         return params;
     }
 

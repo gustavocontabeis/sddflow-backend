@@ -27,13 +27,13 @@ public class CreateFileTool implements Tool {
 
     @Override
     public String getDescription() {
-        return "Cria um novo arquivo com conteúdo especificado no filesystem";
+        return "Cria um NOVO arquivo no filesystem (não sobrescreve arquivo existente)";
     }
 
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("file_path", "Caminho relativo do arquivo a criar (ex: src/main/java/MyClass.java)");
+        params.put("file_path", "Caminho do arquivo a criar (relativo ao basePath ou absoluto)");
         params.put("content", "Conteúdo do arquivo");
         return params;
     }
@@ -53,10 +53,16 @@ public class CreateFileTool implements Tool {
         String fullPath = basePath + "/" + filePath;
         var path = Paths.get(FileUtils.fixPath(fullPath));
 
+        if (Files.exists(path)) {
+            throw new IllegalArgumentException(
+                    "Arquivo já existe: " + path + ". Use a tool update_file para alterar apenas as linhas necessárias."
+            );
+        }
+
         // Cria diretórios pais se não existirem
         Files.createDirectories(path.getParent());
 
-        // Cria o arquivo
+        // Cria o arquivo apenas quando ele ainda não existe
         Files.writeString(path, content);
 
         log.info("[TOOL] Arquivo criado: {}", path);

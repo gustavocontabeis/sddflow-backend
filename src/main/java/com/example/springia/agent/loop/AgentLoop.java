@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 
 /**
  * Implementa o Agent Loop com padrão ReAct (Reasoning + Acting)
- *
  * Fluxo:
  * 1. Recebe input
  * 2. LLM pensa (Reasoning)
@@ -55,6 +54,8 @@ public class AgentLoop {
         try {
             String context = buildInitialContext(input);
             int stepCount = 0;
+            String lastActionSignature = null;
+            int repeatedActionCount = 0;
 
             while (stepCount < maxSteps) {
                 stepCount++;
@@ -74,6 +75,24 @@ public class AgentLoop {
                     log.debug("[AGENT] Agent finalizou no passo {}", stepCount);
                     execution.setFinalAnswer(step.getFinalAnswer());
                     execution.setStatus("SUCCESS");
+                    break;
+                }
+
+                String actionSignature = buildActionSignature(step);
+                if (actionSignature.equals(lastActionSignature)) {
+                    repeatedActionCount++;
+                } else {
+                    repeatedActionCount = 1;
+                    lastActionSignature = actionSignature;
+                }
+
+                if (repeatedActionCount >= 4) {
+                    String loopError = "Loop detectado: a mesma ação foi repetida " + repeatedActionCount
+                            + " vezes seguidas. Use update_file para alterar apenas linhas específicas e então finalize.";
+                    step.setToolResult("ERRO: " + loopError);
+                    execution.setStatus("ERROR");
+                    execution.setErrorMessage(loopError);
+                    log.warn("[AGENT] {}", loopError);
                     break;
                 }
 
@@ -128,9 +147,11 @@ public class AgentLoop {
         INSTRUÇÕES:
         1. ANTES de executar qualquer ação, PENSE sobre o que precisa ser feito e verifique no código existente para antes de criar algo novo. Use ferramenta (tool) discovery_tool para isso.
         2. Use UMA ferramenta (tool) para executar a ação
-        3. AGUARDE a observação do resultado antes de prosseguir
-        4. DECIDA se precisa de mais ações ou se pode FINALIZAR
-        5. Quando terminar, responda com "Finalizar: [resposta_final]"
+        3. Se o arquivo já existe, use update_file para alterar somente as linhas necessárias.
+        4. Use create_file APENAS para arquivo novo. Nunca use create_file para sobrescrever arquivo existente.
+        5. AGUARDE a observação do resultado antes de prosseguir
+        6. DECIDA se precisa de mais ações ou se pode FINALIZAR
+        7. Quando terminar, responda com "Finalizar: [resposta_final]"
         
         !! CRÍTICO: Responda com APENAS UMA ação por vez.
         !! Nunca inclua múltiplas ações na mesma resposta.
@@ -218,7 +239,7 @@ public class AgentLoop {
     private List<ToolCall> extractToolCalls(String response) {
         List<ToolCall> calls = new ArrayList<>();
         Pattern pattern = Pattern.compile(
-                "(?ms)^\\s*Ação:\\s*([^\\n]+?)\\s*$\\s*^\\s*Parâmetros:\\s*(\\{.*?})(?=\\s*^\\s*Ação:|\\s*^\\s*Finalizar:|$)"
+                "(?ms)^\\s*Ação:\\s*([^\\n]+?)\\s*$\\s*^\\s*Parâmetros:\\s*(.*?)(?=^\\s*Ação:|^\\s*Finalizar:|\\z)"
         );
         Matcher matcher = pattern.matcher(response);
         while (matcher.find()) {
@@ -272,20 +293,43 @@ public class AgentLoop {
         return "";
     }
 
+    private String normalizeParamsBlock(String paramsStr) {
+        if (paramsStr == null) {
+            return "";
+        }
+
+        String normalized = paramsStr.trim();
+
+        if (normalized.startsWith("```")) {
+            normalized = normalized.replaceFirst("(?s)^```(?:json)?\\s*", "");
+            normalized = normalized.replaceFirst("(?s)\\s*```$", "");
+        }
+
+        int start = normalized.indexOf('{');
+        int end = normalized.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            normalized = normalized.substring(start, end + 1);
+        }
+
+        // Alguns modelos retornam concatenação estilo Java/JS ("..." + "...")
+        // dentro do JSON de parâmetros; remove o operador para recuperar JSON válido.
+        normalized = normalized.replaceAll("\"\\s*\\+\\s*\"", "");
+
+        return normalized.trim();
+    }
+
     /**
      * Parse dos parâmetros JSON
      */
     @SuppressWarnings("unchecked")
     private Map<String, String> parseParameters(String paramsStr) {
         try {
-            if (paramsStr == null || paramsStr.isBlank()) {
+            String normalizedParamsStr = normalizeParamsBlock(paramsStr);
+            if (normalizedParamsStr.isBlank()) {
                 return new HashMap<>();
             }
 
-            // Remove ```json e ``` se houver
-            paramsStr = paramsStr.replace("```json", "").replace("```", "").trim();
-
-            Map<String, Object> rawParams = objectMapper.readValue(paramsStr, Map.class);
+            Map<String, Object> rawParams = objectMapper.readValue(normalizedParamsStr, Map.class);
             Map<String, String> normalizedParams = new HashMap<>();
 
             // Tools recebem Map<String, String>; converte valores JSON primitivos para texto.
@@ -328,6 +372,15 @@ public class AgentLoop {
             log.error("[AGENT] {}", error, e);
             return "ERRO: " + error;
         }
+    }
+
+    private String buildActionSignature(AgentStep step) {
+        if (step.getToolName() == null) {
+            return "";
+        }
+
+        String params = step.getToolParams() == null ? "{}" : new TreeMap<>(step.getToolParams()).toString();
+        return step.getToolName() + "|" + params;
     }
 
     /**

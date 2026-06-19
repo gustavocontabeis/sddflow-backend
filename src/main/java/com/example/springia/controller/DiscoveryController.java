@@ -1,11 +1,13 @@
 package com.example.springia.controller;
 
 import com.example.springia.dto.AskProjectQuestionRequest;
+import com.example.springia.dto.DiscoveryRepoDTO;
 import com.example.springia.dto.UpdateUserStoryRequest;
 import com.example.springia.model.ImplSdd;
 import com.example.springia.model.UserStory;
 import com.example.springia.service.DiscoveryService;
 import com.example.springia.service.ImplSddService;
+import com.example.springia.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -34,7 +36,8 @@ public class DiscoveryController {
     //@GetMapping
     public String discovery(@RequestParam String repositoryPath) {
         log.info("[API] GET /discovery");
-        return discoveryService.dicovery(Path.of(repositoryPath));
+        DiscoveryRepoDTO dicovery = discoveryService.dicovery(Path.of(repositoryPath));
+        return JsonUtils.toJson(dicovery);
     }
 
     /**

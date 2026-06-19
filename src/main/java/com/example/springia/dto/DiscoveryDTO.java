@@ -8,10 +8,14 @@ import java.util.List;
  */
 public record DiscoveryDTO(
 
+    @JsonProperty("linguagem")
     String linguagem,
 
     @JsonProperty("frameworksBibliotecas")
     List<String> frameworksBibliotecas,
+
+    @JsonProperty("extensoesDeArquivosFonte")
+    String extensoesDeArquivosFonte,
 
     @JsonProperty("conexoesComBancoDeDados")
     List<String> conexoesComBancoDeDados,

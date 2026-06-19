@@ -110,17 +110,15 @@ public class DiscoveryTool implements Tool {
         SearchCriteria criteria = null;
         StringBuilder grepResults = new StringBuilder();
         for (CodeRepo repo : repos) {
-            String structuresContext = repo.getStructure();
-            String defaultExtensions = inferDefaultExtensions(structuresContext);
-            criteria = inferSearchCriteria(question, repo.getStructure(), defaultExtensions);
+            criteria = inferSearchCriteria(question, repo.getStructure(), repo.getExtensoesDeArquivosFonte());
 
             Map<String, String> grepParams = new HashMap<>();
-            grepParams.put("project_id", String.valueOf(projectId));
+            grepParams.put("path", repo.getPath());
             grepParams.put("pattern", criteria.searchPattern());
-            grepParams.put("file_extension", criteria.fileExtensions());
+            grepParams.put("file_extension", repo.getExtensoesDeArquivosFonte());
             grepParams.put("ignore_case", "true");
 
-            String grepResult = new GrepFilesTool(projectRepository, codeRepoRepository).execute(grepParams);
+            String grepResult = new GrepFilesTool().execute(grepParams);
 
             grepResults.append(grepResult);
             grepResults.append("\n");
@@ -323,31 +321,6 @@ public class DiscoveryTool implements Tool {
         }
 
         return content.substring(start, end + 1).trim();
-    }
-
-    private String inferDefaultExtensions(String structuresContext) {
-        String structures = structuresContext == null ? "" : structuresContext.toLowerCase();
-
-        if (structures.contains("package.json") || structures.contains("tsconfig.json")) {
-            return ".ts,.tsx,.js,.jsx";
-        }
-        if (structures.contains("requirements.txt") || structures.contains("pyproject.toml")) {
-            return ".py";
-        }
-        if (structures.contains(".csproj")) {
-            return ".cs";
-        }
-        if (structures.contains("cargo.toml")) {
-            return ".rs";
-        }
-        if (structures.contains("go.mod")) {
-            return ".go";
-        }
-        if (structures.contains("pom.xml") || structures.contains("build.gradle") || structures.contains("src/main/java")) {
-            return ".java";
-        }
-
-        return ".java";
     }
 
     private static String text(JsonNode node, String fieldName) {

@@ -11,6 +11,7 @@ import com.example.springia.agent.tool.files.CreateDirectoryTool;
 import com.example.springia.agent.tool.files.CreateFileTool;
 import com.example.springia.agent.tool.files.GrepFilesTool;
 import com.example.springia.agent.tool.files.ListFilesTool;
+import com.example.springia.agent.tool.files.UpdateFileTool;
 import com.example.springia.agent.tool.github.GitHubCloneRepositoryTool;
 import com.example.springia.agent.tool.github.GitHubCreateCommitTool;
 import com.example.springia.agent.tool.github.GitHubCreatePullRequestTool;
@@ -72,16 +73,17 @@ public class ExecutorAgentService {
      */
     private void registerTools(Project selectedProject) {
         toolRegistry.registerTool(new CreateFileTool(basePath));
+        toolRegistry.registerTool(new UpdateFileTool(basePath));
         toolRegistry.registerTool(new ReadFileTool(basePath));
         toolRegistry.registerTool(new CreateDirectoryTool(basePath));
-        toolRegistry.registerTool(new ExecuteCommandTool(basePath));
+        //toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
-        toolRegistry.registerTool(new GrepFilesTool(projectRepository, codeRepoRepository));
+        toolRegistry.registerTool(new GrepFilesTool());
         toolRegistry.registerTool(new DiscoveryTool(projectRepository, codeRepoRepository, chatClient));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
         toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));
-        toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));
-        toolRegistry.registerTool(new GitHubCreatePullRequestTool(gitHubService));
+        //toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));
+        //toolRegistry.registerTool(new GitHubCreatePullRequestTool(gitHubService));
         toolRegistry.registerTool(new GitHubDiscoveryTool(gitHubService));
     }
 

@@ -3,6 +3,7 @@ package com.example.springia.service;
 import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
+import com.example.springia.dto.DiscoveryRepoDTO;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
 import com.example.springia.repository.CodeRepoRepository;
@@ -133,7 +134,7 @@ public class DiscoveryService {
                 .build();
     }
 
-    public String dicovery(Path path){
+    public DiscoveryRepoDTO dicovery(Path path){
 
         List<String> strings = FileUtils.listFilesNames(path);
 
@@ -215,12 +216,24 @@ public class DiscoveryService {
         log.info("DESCRIÇÃO DAS REGRAS DE NEGÓCIO APLICAÇÃO");
         log.info("{}", regrasNegocio);
 
-        return createContitution(
+        DiscoveryRepoDTO dto = new DiscoveryRepoDTO();
+        dto.setLinguagem(configuracoes.linguagem());
+        dto.setFrameworksBibliotecas(configuracoes.frameworksBibliotecas());
+        dto.setExtensoesDeArquivosFonte(configuracoes.extensoesDeArquivosFonte());
+        dto.setConexoesComBancoDeDados(configuracoes.conexoesComBancoDeDados());
+        dto.setArquivosConfiguracao(configuracoes.arquivosConfiguracao());
+        dto.setRegrasDeNegocio(regrasNegocio);
+        dto.setDescricaoEstruturaDiretorios(discoveryDirs.getDescricaoEstruturaDiretorios());
+        dto.setModelo(modeloJson);
+
+        dto.setStrutcture(createContitution(
                 configuracoes,
                 discoveryDirs.getDescricaoEstruturaDiretorios(),
                 modeloJson,
-                regrasNegocio
-        );
+                regrasNegocio));
+
+        return dto;
+        
     }
 
     private String createContitution(DiscoveryDTO configuracoes, String descricaoEstruturaDiretorios, String descricaoModelo, String regrasNegocio) {
@@ -256,7 +269,7 @@ public class DiscoveryService {
                   - mostrar estrutura de diretórios e detalhamento
                 # CONEXOES COM BANDO DE DADOS
                   - detahlar conexões com banco de dados
-                # INTEGRAÇÕES COM OUTRUS SITEMAS
+                # INTEGRAÇÕES COM OUTROS SITEMAS
                 # CLASSES E ATRIBUTOS
                 ### DIAGRAMA DE CLASSES EM MERMAID
                 ### DESCRIÇÃO DO DIAGRAMA
@@ -335,6 +348,9 @@ public class DiscoveryService {
                 identifique:
                 - Linguagem - versão
                 - frameworks e bibliotecas com as versões. Ex: ["java 21", "quarkus 3.14.234", "JPA 2.1", "lombok 2.6", ...]
+                - extensões de arquivos fonte. Lista de tipos de arquivos fontes uitilizaados para este projeto separados por vírgula. ".ts, .js, .html"
+                    Ex: linguagem java: ".java"
+                    Ex: linguagem typescript: ".ts, .js, .html"
                 - conexoes com banco de dados em array de strings informando o tipo de banco (oracle, postgres, etc... ) e IP/DNS de destino. Ex: ["oracle IP 123.456.654.321", "mysql IP 123.456.654.321"]
                 - integracoes com outros sistemas em array de strings descritivas. Ex: ["REST - receita federal - http://receitafederal"]
                 - regras de negócio. Liste todas as regras de negócio encontradas nas classes de Endpoints REST e classes de regras de negócio.
@@ -342,6 +358,7 @@ public class DiscoveryService {
                 {
                   "linguagem":"java",
                   "frameworksBibliotecas":[""]
+                  "extensoesDeArquivosFonte":""
                   "conexoesComBancoDeDados":[""]
                   "integracoesComOutrosSistemas":[""]
                   "arquivosConfiguracao":[""]

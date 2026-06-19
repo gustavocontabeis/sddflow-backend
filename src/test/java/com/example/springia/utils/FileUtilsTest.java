@@ -80,6 +80,24 @@ class FileUtilsTest {
     }
 
     @Test
+    void listFilesNamesShouldIgnoreAnyDotPrefixedPathSegment() throws IOException {
+        Path visibleFile = tempDir.resolve("README.md");
+        Path dotFile = tempDir.resolve(".gitignore");
+        Path vscodeFile = Files.createDirectories(tempDir.resolve(".vscode")).resolve("extensions.json");
+        Path mavenWrapperFile = Files.createDirectories(tempDir.resolve(".mvn").resolve("wrapper"))
+                .resolve("maven-wrapper.properties");
+
+        Files.writeString(visibleFile, "ok");
+        Files.writeString(dotFile, "ignored");
+        Files.writeString(vscodeFile, "ignored");
+        Files.writeString(mavenWrapperFile, "ignored");
+
+        List<String> files = FileUtils.listFilesNames(tempDir);
+
+        assertEquals(List.of(visibleFile.toAbsolutePath().normalize().toString()), files);
+    }
+
+    @Test
     void joinFileContentsShouldReturnEmptyWhenInputIsNullOrEmpty() {
         assertEquals("", FileUtils.joinFileContents((Path[]) null));
         assertEquals("", FileUtils.joinFileContents(new Path[0]));

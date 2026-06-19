@@ -44,11 +44,16 @@ public class FileUtils {
 
     private static boolean notInIgnoredDirectory(Path candidate) {
         for (Path segment : candidate) {
-            if (IGNORED_DIRECTORIES.contains(segment.toString())) {
+            String segmentName = segment.toString();
+            if (IGNORED_DIRECTORIES.contains(segmentName) || isHiddenPathSegment(segmentName)) {
                 return false;
             }
         }
         return true;
+    }
+
+    private static boolean isHiddenPathSegment(String segmentName) {
+        return segmentName.length() > 1 && segmentName.startsWith(".");
     }
 
     public static String joinFileContents(String[] filePaths) {

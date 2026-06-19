@@ -2,10 +2,12 @@ package com.example.springia.service;
 
 import com.example.springia.dto.CloneRepositoryRequest;
 import com.example.springia.dto.CloneRepositoryResponse;
+import com.example.springia.dto.DiscoveryRepoDTO;
 import com.example.springia.dto.UpdateCodeRepoConstitutionsRequest;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.repository.CodeRepoRepository;
 import com.example.springia.utils.FileUtils;
+import com.example.springia.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -76,9 +78,10 @@ public class CodeRepoService {
 
             CloneRepositoryResponse cloneRepositoryResponse = gitHubService.cloneRepository(CloneRepositoryRequest.builder().owner(owner).repo(repo).branch(codeRepo.getBranch()).build());
 
-            String dicovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
+            DiscoveryRepoDTO dicovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
 
-            codeRepo.setStructure(dicovery);
+            codeRepo.setStructure(dicovery.getStrutcture());
+            codeRepo.setExtensoesDeArquivosFonte(dicovery.getExtensoesDeArquivosFonte());
 
             save(codeRepo);
             FileUtils.removeDir(Paths.get(cloneRepositoryResponse.getClonedPath()));

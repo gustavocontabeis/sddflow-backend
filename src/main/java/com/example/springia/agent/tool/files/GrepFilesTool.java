@@ -28,14 +28,6 @@ import java.util.stream.Stream;
 @Component
 public class GrepFilesTool implements Tool {
 
-    private final ProjectRepository projectRepository;
-    private final CodeRepoRepository codeRepoRepository;
-
-    public GrepFilesTool(ProjectRepository projectRepository, CodeRepoRepository codeRepoRepository) {
-        this.projectRepository = projectRepository;
-        this.codeRepoRepository = codeRepoRepository;
-    }
-
     @Override
     public String getName() {
         return "grep_files";
@@ -49,7 +41,7 @@ public class GrepFilesTool implements Tool {
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("project_id", "ID do projeto para carregar os repositórios (obrigatório)");
+        params.put("path", "Path do diretório raiz da busca (obrigatório)");
         params.put("pattern", "Texto ou expressão regular a buscar nos arquivos (obrigatório)");
         params.put("file_extension", "Filtrar apenas arquivos com esta extensão (opcional, ex: .java, .xml)");
         params.put("ignore_case", "Ignorar maiúsculas/minúsculas: true ou false (opcional, padrão: false)");
@@ -58,13 +50,13 @@ public class GrepFilesTool implements Tool {
 
     @org.springframework.ai.tool.annotation.Tool(name = "grep_files", description = "Busca padrão de texto em arquivos dos repositórios do projeto")
     public String grepFiles(
-            @org.springframework.ai.tool.annotation.ToolParam(description = "ID do projeto") Long projectId,
+            @org.springframework.ai.tool.annotation.ToolParam(description = "Path do diretório raiz da busca") String pathStr,
             @org.springframework.ai.tool.annotation.ToolParam(description = "Texto ou expressão regular a buscar") String pattern,
             @org.springframework.ai.tool.annotation.ToolParam(description = "Extensões separadas por vírgula (opcional). Ex: .java,.xml") String fileExtension,
             @org.springframework.ai.tool.annotation.ToolParam(description = "Ignorar maiúsculas/minúsculas (opcional). Ex: true") Boolean ignoreCase
     ) throws Exception {
         Map<String, String> params = new HashMap<>();
-        params.put("project_id", projectId == null ? "" : String.valueOf(projectId));
+        params.put("path", pathStr);
         params.put("pattern", pattern);
         params.put("file_extension", fileExtension == null ? "" : fileExtension);
         params.put("ignore_case", Boolean.toString(Boolean.TRUE.equals(ignoreCase)));
@@ -73,7 +65,7 @@ public class GrepFilesTool implements Tool {
 
     @Override
     public String execute(Map<String, String> params) throws Exception {
-        Long projectId = parseProjectId(params.get("project_id"));
+        String pathStr = params.get("path");
 
         String pattern = params.get("pattern");
         if (pattern == null || pattern.isBlank()) {
@@ -84,71 +76,55 @@ public class GrepFilesTool implements Tool {
         Object ignoreCaseRaw = ((Map<?, ?>) params).get("ignore_case");
         boolean ignoreCase = parseBooleanParam(ignoreCaseRaw);
 
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado: " + projectId));
-
-        List<CodeRepo> repos = codeRepoRepository.findByProjectId(projectId);
-        if (repos == null || repos.isEmpty()) {
-            throw new IllegalStateException("Projeto sem repositórios configurados para execução do grep_files");
-        }
-        project.setRepos(repos);
-
         int regexFlags = ignoreCase ? Pattern.CASE_INSENSITIVE : 0;
         Pattern compiledPattern = Pattern.compile(pattern, regexFlags);
 
         AtomicInteger totalMatches = new AtomicInteger(0);
         StringBuilder result = new StringBuilder();
 
-        for (CodeRepo repo : repos) {
-            Path path = Paths.get(FileUtils.fixPath(repo.getPath()));
+        Path path = Paths.get(FileUtils.fixPath(pathStr));
 
-            log.info("[TOOL] grep_files: localizando em {} arquivos tipo {} que contenha '{}'", path, fileExtension, pattern, compiledPattern);
+        log.info("[TOOL] grep_files: localizando em {} arquivos tipo {} que contenha '{}'", path, fileExtension, pattern, compiledPattern);
 
-            if (!Files.exists(path) || !Files.isDirectory(path)) {
-                log.warn("[TOOL] grep_files: caminho de repositório inválido ou inexistente: {}", path);
-                continue;
+        try (Stream<Path> walk = Files.walk(path)) {
+            walk.filter(Files::isRegularFile)
+                    .filter(file -> !isInsideHiddenDirectory(path, file))
+                    .filter(p -> {
+                        if (fileExtension.isBlank()) {
+                            return true;
+                        }
+                        String name = p.getFileName().toString().toLowerCase();
+                        return Arrays.stream(fileExtension.split(","))
+                                .map(String::trim)
+                                .filter(ext -> !ext.isBlank())
+                                .map(String::toLowerCase)
+                                .anyMatch(name::endsWith);
+                    })                .sorted()
+
+                    .forEach(file -> {
+                        try {
+                            var lines = Files.readAllLines(file);
+                            StringBuilder fileMatches = new StringBuilder();
+                            for (int i = 0; i < lines.size(); i++) {
+                                if (compiledPattern.matcher(lines.get(i)).find()) {
+                                    fileMatches.append("  linha ").append(i + 1)
+                                            .append(": ").append(lines.get(i).strip())
+                                            .append("\n");
+                                    totalMatches.incrementAndGet();
+                                }
+                            }
+                            if (!fileMatches.isEmpty()) {
+                                //String relativePath = path.relativize(file).toString();
+                                String relativePath = file.toString();
+                                result.append("[FILE] ").append("(").append(pathStr).append(") ").append(relativePath).append("\n");
+                                result.append(fileMatches);
+                            }
+                        } catch (IOException e) {
+                            log.warn("[TOOL] grep_files: Não foi possível ler arquivo: {}", file, e);
+                        }
+                    });
             }
 
-            try (Stream<Path> walk = Files.walk(path)) {
-                walk.filter(Files::isRegularFile)
-                        .filter(f->!f.getFileName().toString().contains(".git/"))
-                        .filter(p -> {
-                            if (fileExtension.isBlank()) {
-                                return true;
-                            }
-                            String name = p.getFileName().toString().toLowerCase();
-                            return Arrays.stream(fileExtension.split(","))
-                                    .map(String::trim)
-                                    .filter(ext -> !ext.isBlank())
-                                    .map(String::toLowerCase)
-                                    .anyMatch(name::endsWith);
-                        })                .sorted()
-
-                        .forEach(file -> {
-                            try {
-                                //log.info("{}", file.getFileName());
-                                var lines = Files.readAllLines(file);
-                                StringBuilder fileMatches = new StringBuilder();
-                                for (int i = 0; i < lines.size(); i++) {
-                                    if (compiledPattern.matcher(lines.get(i)).find()) {
-                                        fileMatches.append("  linha ").append(i + 1)
-                                                .append(": ").append(lines.get(i).strip())
-                                                .append("\n");
-                                        totalMatches.incrementAndGet();
-                                    }
-                                }
-                                if (!fileMatches.isEmpty()) {
-                                    String relativePath = path.relativize(file).toString();
-                                    result.append("[FILE] ").append("(").append(repo.getName()).append(") ").append(relativePath).append("\n");
-                                    result.append(fileMatches);
-                                }
-                            } catch (IOException e) {
-                                log.warn("[TOOL] grep_files: Não foi possível ler arquivo: {}", file, e);
-                            }
-                        });
-            }
-
-        }
 
         if (result.isEmpty()) {
             log.info("[TOOL] grep_files: nenhum resultado para '{}'", pattern);
@@ -156,9 +132,26 @@ public class GrepFilesTool implements Tool {
         }
 
         log.info("[TOOL] grep_files: {} ocorrência(s) encontrada(s) para '{}'", totalMatches.get(), pattern);
-        log.info("[TOOL] grep_files: '{}'", result);
+        log.info("[TOOL] grep_files: \n{}", result);
 
         return "Total de ocorrências: " + totalMatches.get() + "\n\n" + result;
+    }
+
+    private boolean isInsideHiddenDirectory(Path rootPath, Path filePath) {
+        Path relativePath;
+        try {
+            relativePath = rootPath.relativize(filePath);
+        } catch (IllegalArgumentException e) {
+            // Se não for possível relativizar, mantém o arquivo elegível.
+            return false;
+        }
+
+        for (Path segment : relativePath) {
+            if (segment.toString().startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Long parseProjectId(Object projectIdObj) {
