@@ -107,16 +107,25 @@ public class DiscoveryTool implements Tool {
 
         project.setRepos(repos);
 
-        String structuresContext = buildStructuresContext(repos);
-        String defaultExtensions = inferDefaultExtensions(repos, structuresContext);
-        SearchCriteria criteria = inferSearchCriteria(question, structuresContext, defaultExtensions);
+        SearchCriteria criteria = null;
+        StringBuilder grepResults = new StringBuilder();
+        for (CodeRepo repo : repos) {
+            String structuresContext = repo.getStructure();
+            String defaultExtensions = inferDefaultExtensions(structuresContext);
+            criteria = inferSearchCriteria(question, repo.getStructure(), defaultExtensions);
 
-        Map<String, String> grepParams = new HashMap<>();
-        grepParams.put("pattern", criteria.searchPattern());
-        grepParams.put("file_extension", criteria.fileExtensions());
-        grepParams.put("ignore_case", "true");
+            Map<String, String> grepParams = new HashMap<>();
+            grepParams.put("project_id", String.valueOf(projectId));
+            grepParams.put("pattern", criteria.searchPattern());
+            grepParams.put("file_extension", criteria.fileExtensions());
+            grepParams.put("ignore_case", "true");
 
-        String grepResult = new GrepFilesTool(project).execute(grepParams);
+            String grepResult = new GrepFilesTool(projectRepository, codeRepoRepository).execute(grepParams);
+
+            grepResults.append(grepResult);
+            grepResults.append("\n");
+
+        }
 
         return """
                 Discovery do projeto %d (%s)
@@ -127,7 +136,6 @@ public class DiscoveryTool implements Tool {
                 - atributo: %s
                 - palavra-chave: %s
                 - padrão grep: %s
-                - extensões: %s
                 - justificativa: %s
 
                 Resultado da busca:
@@ -140,21 +148,18 @@ public class DiscoveryTool implements Tool {
                 safe(criteria.targetAttribute()),
                 safe(criteria.searchKeyword()),
                 safe(criteria.searchPattern()),
-                safe(criteria.fileExtensions()),
                 safe(criteria.rationale()),
-                grepResult
+                grepResults
         ).trim();
     }
 
-    private Long parseProjectId(Object projectIdObj) {
-        String projectId =  String.valueOf(projectIdObj.toString());
+    private Long parseProjectId(String projectId) {
         if (projectId == null || projectId.isBlank()) {
             throw new IllegalArgumentException("O parâmetro 'project_id' é obrigatório");
         }
 
         try {
-
-            return Long.valueOf(projectId.trim().replaceAll("\\d^", ""));
+            return Long.valueOf(projectId.trim());
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("O parâmetro 'project_id' deve ser numérico: " + projectId, e);
         }
@@ -320,7 +325,7 @@ public class DiscoveryTool implements Tool {
         return content.substring(start, end + 1).trim();
     }
 
-    private String inferDefaultExtensions(List<CodeRepo> repos, String structuresContext) {
+    private String inferDefaultExtensions(String structuresContext) {
         String structures = structuresContext == null ? "" : structuresContext.toLowerCase();
 
         if (structures.contains("package.json") || structures.contains("tsconfig.json")) {
@@ -340,16 +345,6 @@ public class DiscoveryTool implements Tool {
         }
         if (structures.contains("pom.xml") || structures.contains("build.gradle") || structures.contains("src/main/java")) {
             return ".java";
-        }
-
-        for (CodeRepo repo : repos) {
-            String path = safe(repo.getPath()).toLowerCase();
-            if (path.endsWith(".py")) {
-                return ".py";
-            }
-            if (path.endsWith(".cs")) {
-                return ".cs";
-            }
         }
 
         return ".java";

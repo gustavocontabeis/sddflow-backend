@@ -76,7 +76,7 @@ public class ExecutorAgentService {
         toolRegistry.registerTool(new CreateDirectoryTool(basePath));
         toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
-        toolRegistry.registerTool(new GrepFilesTool(selectedProject));
+        toolRegistry.registerTool(new GrepFilesTool(projectRepository, codeRepoRepository));
         toolRegistry.registerTool(new DiscoveryTool(projectRepository, codeRepoRepository, chatClient));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
         toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));

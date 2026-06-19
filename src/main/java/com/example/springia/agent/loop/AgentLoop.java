@@ -58,7 +58,7 @@ public class AgentLoop {
 
             while (stepCount < maxSteps) {
                 stepCount++;
-                log.info("[AGENT] Passo {} de {}", stepCount, maxSteps);
+                log.debug("[AGENT] Passo {} de {}", stepCount, maxSteps);
                 //log.debug("[AGENT] Prompt: {}", context);
 
                 // Chamada ao LLM para decidir ação
@@ -71,7 +71,7 @@ public class AgentLoop {
 
                 // Se é final, encerra
                 if (step.isFinal()) {
-                    log.info("[AGENT] Agent finalizou no passo {}", stepCount);
+                    log.debug("[AGENT] Agent finalizou no passo {}", stepCount);
                     execution.setFinalAnswer(step.getFinalAnswer());
                     execution.setStatus("SUCCESS");
                     break;
@@ -126,7 +126,7 @@ public class AgentLoop {
         %s
         
         INSTRUÇÕES:
-        1. ANTES de executar qualquer ação, PENSE sobre o que precisa ser feito
+        1. ANTES de executar qualquer ação, PENSE sobre o que precisa ser feito e verifique no código existente para antes de criar algo novo. Use ferramenta (tool) discovery_tool para isso.
         2. Use UMA ferramenta (tool) para executar a ação
         3. AGUARDE a observação do resultado antes de prosseguir
         4. DECIDA se precisa de mais ações ou se pode FINALIZAR
@@ -285,7 +285,17 @@ public class AgentLoop {
             // Remove ```json e ``` se houver
             paramsStr = paramsStr.replace("```json", "").replace("```", "").trim();
 
-            return (Map<String, String>) objectMapper.readValue(paramsStr, Map.class);
+            Map<String, Object> rawParams = objectMapper.readValue(paramsStr, Map.class);
+            Map<String, String> normalizedParams = new HashMap<>();
+
+            // Tools recebem Map<String, String>; converte valores JSON primitivos para texto.
+            for (Map.Entry<String, Object> entry : rawParams.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                normalizedParams.put(key, value == null ? "" : String.valueOf(value));
+            }
+
+            return normalizedParams;
         } catch (Exception e) {
             log.warn("[AGENT] Erro ao fazer parse de parâmetros: {}", paramsStr, e);
             return new HashMap<>();

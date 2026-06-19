@@ -99,7 +99,7 @@ public class SddService {
                 .replace("{{USER_STORY}}", userStory.getContent())
                 .replace("{{SDD_SPEC}}", userStory.getSpec().getContent());
 
-        log.info("PLAN promptLength={}, prompt:={}", prompt.length(), prompt);
+        log.debug("PLAN promptLength={}, prompt:={}", prompt.length(), prompt);
 
         String plan = chatService.chat(prompt);
 
@@ -130,7 +130,7 @@ public class SddService {
                 .replace("{{SDD_SPEC}}", userStory.getSpec().getContent())
                 .replace("{{SDD_PLAN}}", userStory.getPlan().getContent());
 
-        log.info("TASK promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
+        log.debug("TASK promptLength={}, promptLenght:={}", prompt.split(" ").length, prompt);
 
         String content = chatService.chat(prompt);
 
