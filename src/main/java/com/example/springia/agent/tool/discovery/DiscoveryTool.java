@@ -39,17 +39,14 @@ public class DiscoveryTool implements Tool {
     );
 
     private final ProjectRepository projectRepository;
-    private final CodeRepoRepository codeRepoRepository;
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
 
     public DiscoveryTool(
             ProjectRepository projectRepository,
-            CodeRepoRepository codeRepoRepository,
             ChatClient chatClient
     ) {
         this.projectRepository = projectRepository;
-        this.codeRepoRepository = codeRepoRepository;
         this.chatClient = chatClient;
         this.objectMapper = new ObjectMapper();
     }
@@ -100,7 +97,7 @@ public class DiscoveryTool implements Tool {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado: " + projectId));
 
-        List<CodeRepo> repos = codeRepoRepository.findByProjectId(projectId);
+        List<CodeRepo> repos = project.getRepos();
         if (repos == null || repos.isEmpty()) {
             throw new IllegalStateException("Projeto sem repositórios configurados para discovery_tool");
         }

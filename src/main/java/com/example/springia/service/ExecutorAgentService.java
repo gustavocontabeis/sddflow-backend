@@ -79,7 +79,7 @@ public class ExecutorAgentService {
         //toolRegistry.registerTool(new ExecuteCommandTool(basePath));
         toolRegistry.registerTool(new ListFilesTool(basePath));
         toolRegistry.registerTool(new GrepFilesTool());
-        toolRegistry.registerTool(new DiscoveryTool(projectRepository, codeRepoRepository, chatClient));
+        toolRegistry.registerTool(new DiscoveryTool(projectRepository, chatClient));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
         toolRegistry.registerTool(new GitHubCloneRepositoryTool(gitHubService));
         //toolRegistry.registerTool(new GitHubCreateCommitTool(gitHubService));

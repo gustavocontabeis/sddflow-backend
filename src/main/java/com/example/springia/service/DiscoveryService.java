@@ -118,7 +118,7 @@ public class DiscoveryService {
 
         log.info("[Perguntas]: {}\n", prompt);
 
-        String content = chatClient.prompt().tools(new DiscoveryTool(projectRepository, codeRepoRepository, chatClient))
+        String content = chatClient.prompt().tools(new DiscoveryTool(projectRepository, chatClient))
                 .user(prompt)
                 .call()
                 .content();

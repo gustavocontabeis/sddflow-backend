@@ -1,12 +1,16 @@
 package com.example.springia.service;
 
+import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.dto.ImplSddValidationDto;
 import com.example.springia.dto.PromptAuditResponse;
 import com.example.springia.model.*;
 import com.example.springia.model.enums.SpecificationDocumentStatus;
+import com.example.springia.repository.CodeRepoRepository;
+import com.example.springia.repository.ProjectRepository;
 import com.example.springia.repository.UserStoryRepository;
 import com.example.springia.serviceagent.SddPlanServiceAgent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +42,12 @@ public class SddService {
 
     @Autowired
     private PromptService promptService;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private CodeRepoRepository codeRepoRepository;
 
     public PromptAuditResponse analyzePrompt(Long userStoryId, String question) {
         log.info("Iniciando analise de prompt para userStoryId={} questionLength={}",
@@ -92,16 +102,24 @@ public class SddService {
         String prompt = loadPromptContent("CREATE_SSD_PLAN");
 
         ConversationSession conversationSession = userStory.getConversationSession();
-        String projectConstitution = conversationSession.getProject().getConstitution();
+        Project project = conversationSession.getProject();
+        String projectConstitution = project.getConstitution();
 
         prompt = prompt
                 .replace("{{CONSTITUTION}}", projectConstitution)
                 .replace("{{USER_STORY}}", userStory.getContent())
-                .replace("{{SDD_SPEC}}", userStory.getSpec().getContent());
+                .replace("{{SDD_SPEC}}", userStory.getSpec().getContent())
+                .replace("{{PROJECT_ID}}", project.getId().toString());
 
         log.debug("PLAN promptLength={}, prompt:={}", prompt.length(), prompt);
 
         String plan = chatService.chat(prompt);
+
+//        String plan = chatClient.prompt().tools(new DiscoveryTool(projectRepository, chatClient))
+//                .user(prompt)
+//                .call()
+//                .content();
+
 
         String newPlan = planSddAgentService.validarRepositorio(conversationSession.getProject(), plan);
 
