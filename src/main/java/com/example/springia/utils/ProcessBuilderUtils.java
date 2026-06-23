@@ -6,11 +6,24 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+/**
+ * Utilitário para execução de comandos via {@link ProcessBuilder}.
+ *
+ * <p>Exemplo para alterar o nível de log desta classe via Actuator:</p>
+ *
+ * <pre>
+ * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.utils.ProcessBuilderUtils" \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"configuredLevel":"DEBUG"}'
+ * </pre>
+ */
 @Slf4j
 public class
 ProcessBuilderUtils {
 
     public static ProcessBuilderReturnDTO execute(String path, String...command) {
+
+        log.info("Executando comando [{}]", String.join(" ", command));
 
         ProcessBuilderReturnDTO ret = new ProcessBuilderReturnDTO();
 
@@ -31,7 +44,7 @@ ProcessBuilderUtils {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    log.info(line); // opcional: ver em tempo real
+                    log.debug(line); // opcional: ver em tempo real
                     output.append(line).append("\n");
                 }
             }
@@ -39,13 +52,14 @@ ProcessBuilderUtils {
             int exitCode = process.waitFor();
             ret.setExitCode(exitCode);
             ret.setOutput(output.toString());
+            ret.setImageName(path);
 
-            log.info("Exit code: " + exitCode);
+            log.debug("Exit code: " + exitCode);
 
             if (exitCode != 0) {
                 log.error("Erro detectado no build! Output:\n{}", ret.getOutput());
             } else {
-                log.info("Comando executado com sucesso. Output:\n{}", ret.getOutput());
+                log.info("Comando executado com sucesso.");
             }
         } catch (Exception e) {
             ret.setExitCode(-1);

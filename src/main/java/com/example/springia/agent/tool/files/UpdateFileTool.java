@@ -34,8 +34,8 @@ public class UpdateFileTool implements Tool {
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("file_path", "Caminho do arquivo a alterar (relativo ao basePath ou absoluto)");
-        params.put("old_text", "Trecho exato atual a ser substituído");
+        params.put("file_path", "Caminho do arquivo a alterar (caminho absoluto) OBRIGATÒRIO");
+        params.put("old_text", "Trecho exato atual a ser substituído OBRIGATÒRIO");
         params.put("new_text", "Novo trecho que substituirá old_text");
         params.put("replace_all", "Opcional: true para substituir todas ocorrências; padrão false");
         return params;

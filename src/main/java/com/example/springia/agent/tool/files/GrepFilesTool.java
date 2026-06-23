@@ -23,6 +23,13 @@ import java.util.stream.Stream;
 
 /**
  * Ferramenta para buscar conteúdo em arquivos usando grep via Files.walk
+ * <p>Exemplo para alterar o nível de log desta classe via Actuator:</p>
+ *
+ * <pre>
+ * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.tool.files.GrepFilesTool" \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"configuredLevel":"DEBUG"}'
+ * </pre>
  */
 @Slf4j
 @Component
@@ -84,7 +91,7 @@ public class GrepFilesTool implements Tool {
 
         Path path = Paths.get(FileUtils.fixPath(pathStr));
 
-        log.info("[TOOL] grep_files: localizando em {} arquivos tipo {} que contenha '{}'", path, fileExtension, pattern, compiledPattern);
+        log.debug("[TOOL] grep_files: localizando em {} arquivos tipo {} que contenha '{}'", path, fileExtension, pattern);
 
         try (Stream<Path> walk = Files.walk(path)) {
             walk.filter(Files::isRegularFile)
@@ -132,7 +139,7 @@ public class GrepFilesTool implements Tool {
         }
 
         log.info("[TOOL] grep_files: {} ocorrência(s) encontrada(s) para '{}'", totalMatches.get(), pattern);
-        log.info("[TOOL] grep_files: \n{}", result);
+        log.debug("[TOOL] grep_files: \n{}", result);
 
         return "Total de ocorrências: " + totalMatches.get() + "\n\n" + result;
     }

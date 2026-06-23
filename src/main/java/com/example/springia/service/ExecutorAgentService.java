@@ -101,7 +101,7 @@ public class ExecutorAgentService {
     public AgentExecution executeTask(String taskDescription, Project project) throws Exception {
         registerTools(project);
         log.info("[EXECUTOR_AGENT] Iniciando execução de tarefa");
-        return agentLoop.execute(taskDescription);
+        return agentLoop.execute(taskDescription, project);
     }
 
     /**

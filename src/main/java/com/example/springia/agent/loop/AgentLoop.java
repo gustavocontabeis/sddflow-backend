@@ -2,6 +2,9 @@ package com.example.springia.agent.loop;
 
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.agent.tool.ToolRegistry;
+import com.example.springia.model.CodeRepo;
+import com.example.springia.model.Project;
+import com.example.springia.utils.LogUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -18,6 +21,10 @@ import java.util.regex.Pattern;
  * 3. LLM decide ação (Acting) - qual tool usar
  * 4. Executa tool e observa resultado
  * 5. Repete até chegar a Finalizar
+ *
+ * <pre>
+ * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.loop.AgentLoop" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'
+ * </pre>
  */
 @Slf4j
 public class AgentLoop {
@@ -26,18 +33,31 @@ public class AgentLoop {
     private final ToolRegistry toolRegistry;
     private final int maxSteps;
     private final ObjectMapper objectMapper;
+    private final AgentFinalizationGate finalizationGate;
 
     public AgentLoop(ChatClient chatClient, ToolRegistry toolRegistry, int maxSteps) {
+        this(chatClient, toolRegistry, maxSteps, new AgentFinalizationGate());
+    }
+
+    public AgentLoop(ChatClient chatClient, ToolRegistry toolRegistry, int maxSteps, AgentFinalizationGate finalizationGate) {
         this.chatClient = chatClient;
         this.toolRegistry = toolRegistry;
         this.maxSteps = maxSteps;
         this.objectMapper = new ObjectMapper();
+        this.finalizationGate = finalizationGate;
     }
 
     /**
      * Executa o agent loop com o input fornecido
      */
     public AgentExecution execute(String input) throws Exception {
+        return execute(input, null);
+    }
+
+    /**
+     * Executa o agent loop com contexto de projeto para validar build/test no gate final.
+     */
+    public AgentExecution execute(String input, Project project) throws Exception {
         String executionId = UUID.randomUUID().toString();
         LocalDateTime startTime = LocalDateTime.now();
 
@@ -72,6 +92,26 @@ public class AgentLoop {
 
                 // Se é final, encerra
                 if (step.isFinal()) {
+                    List<CodeRepo> repos = project.getRepos();
+                    AgentFinalizationGate.GateResult gateResult = finalizationGate.validate(project);
+                    log.info("[AGENT] Gate de finalizacao - finalizado a validação. Resultado: {}", gateResult.passed()?"Aprovado":"Reprovado");
+                    if (!gateResult.passed()) {
+                        String gateFeedback = "Gate de finalizacao reprovado. Corrija o codigo com base nos logs abaixo e so entao finalize novamente.\n\n" + gateResult.report();
+                        step.setObservation("Finalizacao bloqueada por falha no gate de build/test via Docker.");
+                        step.setToolResult(gateFeedback);
+                        step.setFinal(false);
+                        step.setFinalAnswer(null);
+                        log.warn("[AGENT] Gate de finalizacao reprovado no passo {}", stepCount);
+
+                        context = updateContext(context, step);
+
+                        log.warn("[AGENT] Arquivo log: {}", LogUtils.saveLog(context));
+
+                        continue;
+                    }
+
+                    step.setObservation("Finalizacao aprovada no gate de build/test via Docker.");
+                    step.setToolResult(gateResult.report());
                     log.debug("[AGENT] Agent finalizou no passo {}", stepCount);
                     execution.setFinalAnswer(step.getFinalAnswer());
                     execution.setStatus("SUCCESS");
