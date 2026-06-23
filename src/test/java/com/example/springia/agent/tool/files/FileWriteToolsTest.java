@@ -62,5 +62,38 @@ class FileWriteToolsTest {
         assertTrue(result.contains("2 ocorrência(s)"));
         assertEquals("prioridade=1\nprioridade=1\n", Files.readString(file));
     }
+
+    @Test
+    void updateFileShouldMatchOldTextWithDifferentWhitespace() throws Exception {
+        Path file = tempDir.resolve("demo.txt");
+        Files.writeString(file, "if (this.tarefa.prioridade === 0) {\n    alert('Informe uma prioridade');\n    return;\n}\n");
+
+        UpdateFileTool tool = new UpdateFileTool(tempDir.toString());
+        String result = tool.execute(Map.of(
+                "file_path", "demo.txt",
+                "old_text", "if (this.tarefa.prioridade === 0) { alert('Informe uma prioridade'); return; }",
+                "new_text", "if (this.tarefa.prioridade === 0) {\n    this.erro = 'Informe uma prioridade';\n    return;\n}"
+        ));
+
+        assertTrue(result.contains("1 ocorrência(s)"));
+        assertTrue(Files.readString(file).contains("this.erro = 'Informe uma prioridade'"));
+    }
+
+    @Test
+    void updateFileShouldReturnHelpfulMessageWhenOldTextDoesNotExist() throws Exception {
+        Path file = tempDir.resolve("demo.txt");
+        Files.writeString(file, "conteudo existente\n");
+
+        UpdateFileTool tool = new UpdateFileTool(tempDir.toString());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> tool.execute(Map.of(
+                        "file_path", "demo.txt",
+                        "old_text", "trecho inexistente",
+                        "new_text", "novo"
+                )));
+
+        assertTrue(ex.getMessage().contains("Use read_file"));
+        assertTrue(ex.getMessage().contains("Prévia do início do arquivo"));
+    }
 }
 

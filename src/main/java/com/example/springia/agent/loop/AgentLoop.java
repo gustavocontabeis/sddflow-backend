@@ -188,6 +188,8 @@ public class AgentLoop {
         1. ANTES de executar qualquer ação, PENSE sobre o que precisa ser feito e verifique no código existente para antes de criar algo novo. Use ferramenta (tool) discovery_tool para isso.
         2. Use UMA ferramenta (tool) para executar a ação
         3. Se o arquivo já existe, use update_file para alterar somente as linhas necessárias.
+        3.1. ANTES de usar update_file, use read_file no mesmo arquivo e copie o old_text literalmente da saída.
+        3.2. Nunca invente comentários/trechos para old_text; use apenas texto que exista no arquivo.
         4. Use create_file APENAS para arquivo novo. Nunca use create_file para sobrescrever arquivo existente.
         5. AGUARDE a observação do resultado antes de prosseguir
         6. DECIDA se precisa de mais ações ou se pode FINALIZAR

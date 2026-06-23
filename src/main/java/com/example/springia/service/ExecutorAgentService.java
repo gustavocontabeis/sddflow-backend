@@ -2,7 +2,6 @@ package com.example.springia.service;
 
 import com.example.springia.agent.loop.AgentExecution;
 import com.example.springia.agent.loop.AgentLoop;
-import com.example.springia.agent.tool.ExecuteCommandTool;
 import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.agent.tool.GitHubListRepositoriesTool;
 import com.example.springia.agent.tool.ReadFileTool;
@@ -10,11 +9,9 @@ import com.example.springia.agent.tool.ToolRegistry;
 import com.example.springia.agent.tool.files.CreateDirectoryTool;
 import com.example.springia.agent.tool.files.CreateFileTool;
 import com.example.springia.agent.tool.files.GrepFilesTool;
-import com.example.springia.agent.tool.files.ListFilesTool;
+import com.example.springia.agent.tool.files.FindFilesTool;
 import com.example.springia.agent.tool.files.UpdateFileTool;
 import com.example.springia.agent.tool.github.GitHubCloneRepositoryTool;
-import com.example.springia.agent.tool.github.GitHubCreateCommitTool;
-import com.example.springia.agent.tool.github.GitHubCreatePullRequestTool;
 import com.example.springia.agent.tool.github.GitHubDiscoveryTool;
 import com.example.springia.model.Project;
 import com.example.springia.repository.CodeRepoRepository;
@@ -77,7 +74,7 @@ public class ExecutorAgentService {
         toolRegistry.registerTool(new ReadFileTool(basePath));
         toolRegistry.registerTool(new CreateDirectoryTool(basePath));
         //toolRegistry.registerTool(new ExecuteCommandTool(basePath));
-        toolRegistry.registerTool(new ListFilesTool(basePath));
+        toolRegistry.registerTool(new FindFilesTool(basePath));
         toolRegistry.registerTool(new GrepFilesTool());
         toolRegistry.registerTool(new DiscoveryTool(projectRepository, chatClient));
         toolRegistry.registerTool(new GitHubListRepositoriesTool(gitHubService));
@@ -148,4 +145,3 @@ public class ExecutorAgentService {
         return toolRegistry;
     }
 }
-

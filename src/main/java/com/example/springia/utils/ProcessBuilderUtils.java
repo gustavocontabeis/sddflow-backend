@@ -12,9 +12,7 @@ import java.io.InputStreamReader;
  * <p>Exemplo para alterar o nível de log desta classe via Actuator:</p>
  *
  * <pre>
- * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.utils.ProcessBuilderUtils" \
- *   -H "Content-Type: application/json" \
- *   -d '{"configuredLevel":"DEBUG"}'
+ * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.utils.ProcessBuilderUtils" -H "Content-Type: application/json"  -d '{"configuredLevel":"DEBUG"}'
  * </pre>
  */
 @Slf4j
