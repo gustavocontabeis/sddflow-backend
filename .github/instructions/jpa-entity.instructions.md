@@ -10,19 +10,22 @@ condition: 'O arquivo deve conter a anotação @Entity.'
 
 Estas instruções se aplicam a todas as classes Java do projeto que possuem a anotação `@Entity`.
 - Nao utilize a anotação @Table, apenas @Entity
-A anotação `@Entity`. deve possuir o nome da tabela seguinto esse padrão: `@Entity(name = "lictb0001_nome_da_tabela")`.
+A anotação `@Entity`. deve possuir o nome da tabela seguinto esse padrão: `@Entity(name = "lictb001_nome_da_tabela")`.
 - lic - prefixo do projeto
 - tb - significa que é uma tabela, vw - significa que é uma view, sq - significa que é uma sequence
-- 001 - número sequencial da tabela, view ou sequence
+- 001 - número sequencial da tabela, view ou sequence (fazculhe nas classes ecistentes para descobrir o próximo numero sequencial)
 - nome da tabela escrito em snake_case seguindo as mesmas regras de abreviação
-- 
+
+O Atributo com `@Id` deve ter a sequence declarada com `@GeneratedValue` e `@SequenceGenerator`
+ 
 ## Padrões obrigatórios
 - Utilize as melhores práticas de modelagem JPA.
 - os nomes das tabelas/colunas e sequences devem estar em português/Brasil, seguindo as regras de abreviação e prefixos.
 - utilize anotações lombok @Data @AllArgsConstructor @NoArgsConstructor @Builder
-- Utilize anotações da API de Validation do Java para garantir a integridade dos dados (ex: `@NotNull`, `@Size`, etc).
+- Utilize anotações da API de Validation do Java para garantir a integridade dos dados (ex: `@NotNull`, `@Size`, `@NotBlank` quando String, etc).
 - Declare um campo `@Id` obrigatório.
 - Forneça construtor padrão (sem argumentos) e, se necessário, construtores adicionais.
+- Quando "TEXT" for necessário, utilize `@Lob` para campos de texto longo. Não utilize @Size, @Length e length no @Column.
 
 ---
 
@@ -36,7 +39,7 @@ Estas orientações garantem que todas as entidades JPA estejam alinhadas com os
 - Nomes claros e objetivos
 
 ### 1.2 Abreviações
-- abreviar quando exceder o tamanho
+- abreviar somente quando exceder o tamanho
 - manter a primeira e ultima letra da palavra
 - remover vogais intermediarias
 - simplificar digrafos ("RR" -> "R", "SS" -> "S")
@@ -47,7 +50,7 @@ Estas orientações garantem que todas as entidades JPA estejam alinhadas com os
 
 TODAS as colunas deverão seguir esta regra de prefixo
 
-- ds_ → descrição (String)
+- de_ → descrição (String)
 - nu_ → número (Long, Integer, BigDecimal, etc)
 - no_ → nome
 - co_ → código (String)

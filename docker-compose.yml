@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: springia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: springia
+      POSTGRES_USER: springia
+      POSTGRES_PASSWORD: springia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U springia -d springia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

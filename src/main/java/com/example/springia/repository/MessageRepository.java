@@ -16,12 +16,12 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByConversationSessionId(Long sessionId);
 
     @Query("""
-            select m from Message m
+            select m from lictb005_mensagem m
             where m.id = (
-                select max(m2.id) from Message m2
+                select max(m2.id) from lictb005_mensagem m2
                 where m2.conversationSession.id = :sessionId
                   and m2.timestamp = (
-                      select max(m3.timestamp) from Message m3 where m3.conversationSession.id = :sessionId
+                      select max(m3.timestamp) from lictb005_mensagem m3 where m3.conversationSession.id = :sessionId
                   )
             )
             """)
