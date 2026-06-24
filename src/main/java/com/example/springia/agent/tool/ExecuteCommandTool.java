@@ -32,13 +32,15 @@ public class ExecuteCommandTool implements Tool {
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("command", "Comando a executar (ex: mvn clean compile, gradle build)");
+        params.put("command", "Comando a executar (ex: mvn clean compile, ng build)");
+        params.put("codeRepo_path", "Atributo `path` da classe `CodeRepo` que é o local aonde o código do repositório está clonado");
         return params;
     }
 
     @Override
     public String execute(Map<String, String> params) throws Exception {
         String command = params.get("command");
+        String codeRepoPath = params.get("codeRepo_path");
 
         if (command == null || command.isBlank()) {
             throw new IllegalArgumentException("command é obrigatório");
@@ -48,7 +50,7 @@ public class ExecuteCommandTool implements Tool {
 
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
 
-        pb.directory(new java.io.File(basePath.replace("/tmp/tmp/", "/tmp/")));
+        pb.directory(new java.io.File(codeRepoPath.replace("/tmp/tmp/", "/tmp/")));
         pb.redirectErrorStream(true);
 
         Process process = pb.start();
