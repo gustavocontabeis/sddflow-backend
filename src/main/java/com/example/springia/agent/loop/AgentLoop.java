@@ -2,9 +2,7 @@ package com.example.springia.agent.loop;
 
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.agent.tool.ToolRegistry;
-import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
-import com.example.springia.utils.LogUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -33,18 +31,12 @@ public class AgentLoop {
     private final ToolRegistry toolRegistry;
     private final int maxSteps;
     private final ObjectMapper objectMapper;
-    private final AgentFinalizationGate finalizationGate;
 
     public AgentLoop(ChatClient chatClient, ToolRegistry toolRegistry, int maxSteps) {
-        this(chatClient, toolRegistry, maxSteps, new AgentFinalizationGate());
-    }
-
-    public AgentLoop(ChatClient chatClient, ToolRegistry toolRegistry, int maxSteps, AgentFinalizationGate finalizationGate) {
         this.chatClient = chatClient;
         this.toolRegistry = toolRegistry;
         this.maxSteps = maxSteps;
         this.objectMapper = new ObjectMapper();
-        this.finalizationGate = finalizationGate;
     }
 
     /**
@@ -76,6 +68,7 @@ public class AgentLoop {
             int stepCount = 0;
             String lastActionSignature = null;
             int repeatedActionCount = 0;
+            boolean alreadyValidatedBuild = false;
 
             while (stepCount < maxSteps) {
                 stepCount++;
@@ -90,32 +83,47 @@ public class AgentLoop {
                 AgentStep step = parseAgentResponse(llmResponse, stepCount);
                 execution.addStep(step);
 
-                // Se é final, encerra
+                // Se é final, executa gate de validação antes de aceitar
                 if (step.isFinal()) {
-                    List<CodeRepo> repos = project.getRepos();
-                    AgentFinalizationGate.GateResult gateResult = finalizationGate.validate(project);
-                    log.info("[AGENT] Gate de finalizacao - finalizado a validação. Resultado: {}", gateResult.passed()?"Aprovado":"Reprovado");
-                    if (!gateResult.passed()) {
-                        String gateFeedback = "Gate de finalizacao reprovado. Corrija o codigo com base nos logs abaixo e so entao finalize novamente.\n\n" + gateResult.report();
-                        step.setObservation("Finalizacao bloqueada por falha no gate de build/test via Docker.");
-                        step.setToolResult(gateFeedback);
-                        step.setFinal(false);
-                        step.setFinalAnswer(null);
-                        log.warn("[AGENT] Gate de finalizacao reprovado no passo {}", stepCount);
+                    if (!alreadyValidatedBuild && project != null && !project.getRepos().isEmpty()) {
+                        log.info("[AGENT] Gate de finalização acionado: validando build/test com Docker");
 
-                        context = updateContext(context, step);
+                        // Executa a ferramenta de validação
+                        AgentStep validationStep = AgentStep.builder()
+                                .stepNumber(stepCount + 1)
+                                .thinking("Executando gate de finalização: validação de build/test com Docker")
+                                .toolName("docker_build_and_test")
+                                .toolParams(new HashMap<>())
+                                .build();
 
-                        log.warn("[AGENT] Arquivo log: {}", LogUtils.saveLog(context));
+                        String validationResult = executeToolCalls(llmResponse, validationStep);
+                        validationStep.setToolResult(validationResult);
+                        execution.addStep(validationStep);
 
-                        continue;
+                        // Verifica se a validação passou
+                        if (validationResult.contains("✅ VALIDAÇÃO COMPLETA")) {
+                            log.info("[AGENT] Validação passou: código está pronto para produção");
+                            step.setObservation("Validação de build/test passou. Código aprovado no gate de finalização.");
+                            alreadyValidatedBuild = true;
+                            execution.setFinalAnswer(step.getFinalAnswer());
+                            execution.setStatus("SUCCESS");
+                            break;
+                        } else if (validationResult.contains("❌ VALIDAÇÃO FALHOU")) {
+                            log.warn("[AGENT] Validação falhou: realimentando feedback ao LLM");
+                            // Não finaliza - realimenta o erro ao LLM
+                            context = context + "\n\n[GATE DE FINALIZAÇÃO] Erro detectado na validação Docker:\n" +
+                                     validationResult + "\n\nCORRIJA OS ERROS ACIMA E TENTE NOVAMENTE.";
+                            stepCount++; // Continua o loop
+                            continue;
+                        }
+                    } else if (alreadyValidatedBuild) {
+                        log.debug("[AGENT] Build já foi validado nesta sessão, finalizando");
+                        step.setObservation("Finalizacao aprovada no gate de build/test via Docker.");
+                        step.setToolResult(null);
+                        execution.setFinalAnswer(step.getFinalAnswer());
+                        execution.setStatus("SUCCESS");
+                        break;
                     }
-
-                    step.setObservation("Finalizacao aprovada no gate de build/test via Docker.");
-                    step.setToolResult(gateResult.report());
-                    log.debug("[AGENT] Agent finalizou no passo {}", stepCount);
-                    execution.setFinalAnswer(step.getFinalAnswer());
-                    execution.setStatus("SUCCESS");
-                    break;
                 }
 
                 String actionSignature = buildActionSignature(step);
@@ -181,6 +189,12 @@ public class AgentLoop {
         
         TAREFA: Analisar e executar as tarefas descritas no código/especificação fornecida.
         
+        ⚠️ IMPORTANTE: GATE DE FINALIZAÇÃO
+        - Quando terminar de implementar, você DEVE usar a ferramenta "docker_build_and_test" para validar TODO o código gerado
+        - Esta ferramenta compila e testa os repositórios dentro de containers Docker
+        - Só após a validação passar (✅ VALIDAÇÃO COMPLETA) você poderá executar "Finalizar:"
+        - Se a validação falhar (❌ VALIDAÇÃO FALHOU), corrija os erros e repita
+        
         TOOLS DISPONÍVEIS:
         %s
         
@@ -192,8 +206,8 @@ public class AgentLoop {
         3.2. Nunca invente comentários/trechos para old_text; use apenas texto que exista no arquivo.
         4. Use create_file APENAS para arquivo novo. Nunca use create_file para sobrescrever arquivo existente.
         5. AGUARDE a observação do resultado antes de prosseguir
-        6. DECIDA se precisa de mais ações ou se pode FINALIZAR
-        7. Quando terminar, responda com "Finalizar: [resposta_final]"
+        6. DECIDA se precisa de mais ações ou se pode executar: docker_build_and_test para validação
+        7. Quando a validação Docker passar, responda com "Finalizar: [resposta_final]"
         
         !! CRÍTICO: Responda com APENAS UMA ação por vez.
         !! Nunca inclua múltiplas ações na mesma resposta.
@@ -205,7 +219,7 @@ public class AgentLoop {
         Ação: [Nome da tool]
         Parâmetros: [JSON com os parâmetros da tool]
         
-        FORMATO DE RESPOSTA (quando terminar todas as ações):
+        FORMATO DE RESPOSTA (depois de validar com docker_build_and_test):
         Pensamento: [Análise final]
         Finalizar: [Resposta resumida do que foi feito]
         
@@ -434,7 +448,8 @@ public class AgentLoop {
             "Tool executada: " + step.getToolName() + "\n" +
             "Resultado:\n" + step.getToolResult() + "\n" +
             "---\n" +
-            "Qual é o próximo passo? (Se tudo está pronto, responda com 'Finalizar: ...')";
+            "⚠️ LEMBRE-SE: Antes de 'Finalizar:', execute: docker_build_and_test para validar todo o código.\n" +
+            "Qual é o próximo passo?";
     }
 
     private record ToolCall(String name, Map<String, String> params) {}

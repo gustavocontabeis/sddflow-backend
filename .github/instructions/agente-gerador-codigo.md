@@ -14,7 +14,10 @@ O sistema precissa fazer o seguinte fluxo:
 - O sistema recebe a solicitação (com.example.springia.controller.ExecutorAgentController) - OK
 - O DiscoveryTool vasculha o sistema e entende o código existente (com.example.springia.agent.tool.discovery.DiscoveryTool) - OK
 - LLM gera código novo ou altera o código existente (com.example.springia.agent.loop.AgentExecution) - OK
-- Sistema compila o código usando docker (com.example.springia.agent.tool.ExecuteCommandTool) - PENDENTE
+- Sistema compila o código de todos os repositórios (com.example.springia.agent.tool.ExecuteCommandTool) - PENDENTE 
+  - quando repositporio for do tipo FRONTEND compile usando o comando ng build
+  - quando repositporio for do tipo BACKEND compilie usando o comando mvn clean test
+  - usando docker  - 
 - Feedback volta pro LLM - PENDENTE
 - Loop até funcionar - PENDENTE
 
@@ -29,27 +32,24 @@ O sistema precissa fazer o seguinte fluxo:
 - Cada repositório possui um arquivo Dockerfile
 - O Log de compilação deverá ser o log da compilação na imagem Docker
 - Se necessário, crie recursos do Spring AI como Tools, Advisors, etc, para evitar alucinações
+- Se precisar executar a aplicação execute o comando `setJava21` para setar o Java 21 e o Maven no Ubuntu
 
 # JÁ TENHO:
 
 - Agentes executores
-  AgentExecution
-  AgentLoop
-  AgentStep
-
+  com.example.springia.agent.loop.AgentExecution
+  com.example.springia.agent.loop.AgentLoop
+  com.example.springia.agent.loop.AgentStep
+  
 - Tools
-  ExecuteCommandTool
-  UpdateFileTool
-  ReadFileTool
-  ListFilesTool
-  GrepFilesTool
-  CreateDirectoryTool
-  CreateFileTool
-  DiscoveryTool
-
-- Um método que builda a imagem Docker
-  Linha 356 SddTaskExecutorService: public ProcessBuilderReturnDTO executeDockerBuildImage(String imageName)
-
+  com.example.springia.agent.tool.ExecuteCommandTool
+  com.example.springia.agent.tool.files.UpdateFileTool
+  com.example.springia.agent.tool.files.ReadFileTool
+  com.example.springia.agent.tool.files.FindFilesTool
+  com.example.springia.agent.tool.files.GrepFilesTool
+  com.example.springia.agent.tool.files.CreateDirectoryTool
+  com.example.springia.agent.tool.files.CreateFileTool
+  com.example.springia.agent.tool.discovery.DiscoveryTool
 
 
 # Diagrama de Classes

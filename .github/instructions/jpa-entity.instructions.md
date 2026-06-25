@@ -28,6 +28,10 @@ O Atributo com `@Id` deve ter a sequence declarada com `@GeneratedValue` e `@Seq
 - Quando "TEXT" for necessário, utilize `@Lob` para campos de texto longo. Não utilize @Size, @Length e length no @Column.
 
 ---
+## Lombok
+Todas classes JPA devem usar as anotações do lombok para reduzir a verbosidade do código, como `@Data`, `@AllArgsConstructor`, `@NoArgsConstructor` e `@Builder`.
+
+---
 
 Estas orientações garantem que todas as entidades JPA estejam alinhadas com os padrões e objetivos do projeto.
 

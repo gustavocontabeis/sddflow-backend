@@ -14,12 +14,6 @@ import java.util.Map;
 @Slf4j
 public class CreateFileTool implements Tool {
 
-    private final String basePath;
-
-    public CreateFileTool(String basePath) {
-        this.basePath = basePath;
-    }
-
     @Override
     public String getName() {
         return "create_file";
@@ -50,7 +44,7 @@ public class CreateFileTool implements Tool {
             content = "";
         }
 
-        String fullPath = basePath + "/" + filePath;
+        String fullPath = filePath;
         var path = Paths.get(FileUtils.fixPath(fullPath));
 
         if (Files.exists(path)) {

@@ -9,3 +9,4 @@ A classe deve ter no javadoc com o comando curl, em uma única linha, para alter
   ex:  curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.loop.AgentLoop" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'
 Todo log deve ter um prefixo '[NOME_METODO]' entre chaves, uppercade, snake_case e resumido em no maximo 20 caracteres.
 Devem ser colocados logs no início de métodos publicos em nivel INFO e privados nível debug, dentro de iterações nível trace
+Todo catch deve ter um log no nível error.
