@@ -4,11 +4,8 @@
 1. DiscoveryTool gera contexto semântico estruturado em JSON.
 2. Code Planning Agent valida o plano antes de qualquer alteração.
 3. read_file é obrigatório antes de alterar qualquer arquivo Java.
-4. Code Generation Agent altera apenas o mínimo necessário.
-5. Static Validator Agent valida sintaxe, imports, tipos e existência de classes.
-6. Patch Agent aplica diff incremental; nunca sobrescreve o arquivo inteiro sem necessidade.
-7. Build Agent executa `docker build` e `mvn clean test` conforme a configuração do repositório.
-8. Feedback Agent devolve erros estruturados para o próximo ciclo.
+4. Static Validator Agent valida sintaxe, imports, tipos e existência de classes.
+7. Feedback Agent devolve erros estruturados para o próximo ciclo.
 
 ### Guardrails obrigatórios
 - Não criar classes novas sem necessidade explícita.
