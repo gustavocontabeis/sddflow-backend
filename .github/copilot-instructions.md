@@ -187,6 +187,9 @@ void shouldDetectBackendStructureAndExtractModelClasses() {
 - **Arquitetura Completa**: ✓ **Sim** — A arquitetura proposta deve incluir desde já:
   - Controller REST para disparo
   - Tools, Advisors e Services
+  - System prompt deve ser definido como Resource com instruções para o LLM  localizado em `prompts/tool-calling-system-prompt.md`
+  - O System prompt deve instruir a LLM a usar as Tools e Advisors para discovery, leitura, escrita, compilação e feedback.
+  - Conectar as Tools ao ChatClient via tool calling usando a anotação `@Tool` do Spring AI
   - Entidades JPA
   - Persistência de histórico
   - Endpoints de acompanhamento
@@ -196,6 +199,10 @@ void shouldDetectBackendStructureAndExtractModelClasses() {
 # TOOLS, ADVISORS E GUARDRAILS
 
 ## Tools
+
+Todas as Tools devem ser anotadas com `@Tool` e `@ToolParam` do Spring AI, permitindo que o LLM as invoque diretamente.
+Use um System prompt para instruir o modelo a chamar as Tools quando necessário, em vez de gerar código diretamente.
+Todos os parametros de entrada devem ser Strings, mesmo que representem paths, nomes de arquivos ou trechos de código.
 
 ### DiscoveryTool
 - Faz o mapeamento da estrutura do projeto, identificando backend, frontend, módulos, entidades, controllers, services, views e testes existentes.
@@ -228,6 +235,8 @@ void shouldDetectBackendStructureAndExtractModelClasses() {
 - Papel principal: **auditar o impacto real da mudança**.
 
 ## Advisors
+
+Os advisors não estão registrados no ChatClient como “advisors do chat”.
 
 ### PlanningAdvisor
 - Converte a solicitação em um plano de execução mínimo e ordenado.
