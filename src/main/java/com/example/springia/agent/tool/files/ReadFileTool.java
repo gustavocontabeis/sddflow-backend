@@ -1,5 +1,6 @@
-package com.example.springia.agent.tool;
+package com.example.springia.agent.tool.files;
 
+import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
@@ -12,12 +13,6 @@ import java.util.Map;
  */
 @Slf4j
 public class ReadFileTool implements Tool {
-
-    private final String basePath;
-
-    public ReadFileTool(String basePath) {
-        this.basePath = basePath;
-    }
 
     @Override
     public String getName() {
@@ -44,8 +39,7 @@ public class ReadFileTool implements Tool {
             throw new IllegalArgumentException("file_path é obrigatório");
         }
 
-        String fullPath = basePath + "/" + filePath;
-        var path = Paths.get(FileUtils.fixPath(fullPath));
+        var path = Paths.get(FileUtils.fixPath(filePath));
 
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Arquivo não encontrado: " + filePath);

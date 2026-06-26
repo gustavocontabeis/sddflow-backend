@@ -185,7 +185,7 @@ public class AgentLoop {
      */
     private String buildInitialContext(String input) {
         return """
-        Você é um especialista em engenharia de software que segue o padrão ReAct (Reasoning + Acting).
+        Você é um especialista em engenharia de software que segue o padrão ReAct (Reasoning + Acting) Especialista em Java e Angular.
         
         TAREFA: Analisar e executar as tarefas descritas no código/especificação fornecida.
         
@@ -200,6 +200,7 @@ public class AgentLoop {
         
         INSTRUÇÕES:
         1. ANTES de executar qualquer ação, PENSE sobre o que precisa ser feito e verifique no código existente para antes de criar algo novo. Use ferramenta (tool) discovery_tool para isso.
+        1.1 Verifique o código antes de alterar. Valide se a sintaxe do código esta correta. Apos atualizar uma classe valida de a sintaxe do código está correto. Faça os imports das classes referente ao código incluído.
         2. Use UMA ferramenta (tool) para executar a ação
         3. Se o arquivo já existe, use update_file para alterar somente as linhas necessárias.
         3.1. ANTES de usar update_file, use read_file no mesmo arquivo e copie o old_text literalmente da saída.
@@ -237,6 +238,7 @@ public class AgentLoop {
      */
     private String callLLM(String context) {
         return chatClient.prompt()
+                .system("Você é um arquiteto de software especialista em Java e Angular. Conhece perfeitamente a sintaxe dessas linguagens.")
                 .user(context)
                 .call()
                 .content();

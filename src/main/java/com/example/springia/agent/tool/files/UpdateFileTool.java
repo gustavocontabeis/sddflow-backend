@@ -19,12 +19,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class UpdateFileTool implements Tool {
 
-    private final String basePath;
-
-    public UpdateFileTool(String basePath) {
-        this.basePath = basePath;
-    }
-
     @Override
     public String getName() {
         return "update_file";
@@ -62,8 +56,7 @@ public class UpdateFileTool implements Tool {
             newText = "";
         }
 
-        String fullPath = basePath + "/" + filePath;
-        var path = Paths.get(FileUtils.fixPath(fullPath));
+        var path = Paths.get(FileUtils.fixPath(filePath));
 
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Arquivo não encontrado: " + path);

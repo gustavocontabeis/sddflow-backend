@@ -14,12 +14,6 @@ import java.util.Map;
 @Slf4j
     public class CreateDirectoryTool implements Tool {
 
-    private final String basePath;
-
-    public CreateDirectoryTool(String basePath) {
-        this.basePath = basePath;
-    }
-
     @Override
     public String getName() {
         return "create_directory";
@@ -33,7 +27,7 @@ import java.util.Map;
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("directory_path", "Caminho relativo do diretório a criar (ex: src/main/java/com/example)");
+        params.put("directory_path", "Caminho absoluto do diretório a criar");
         return params;
     }
 
@@ -45,8 +39,7 @@ import java.util.Map;
             throw new IllegalArgumentException("directory_path é obrigatório");
         }
 
-        String fullPath = basePath + "/" + dirPath;
-        var path = Paths.get(FileUtils.fixPath(fullPath));
+        var path = Paths.get(FileUtils.fixPath(dirPath));
 
         Files.createDirectories(path);
 

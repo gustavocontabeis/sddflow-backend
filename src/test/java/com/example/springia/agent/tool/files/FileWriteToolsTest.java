@@ -21,10 +21,10 @@ class FileWriteToolsTest {
         Path file = tempDir.resolve("demo.txt");
         Files.writeString(file, "conteudo original");
 
-        CreateFileTool tool = new CreateFileTool(tempDir.toString());
+        CreateFileTool tool = new CreateFileTool();
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> tool.execute(Map.of("file_path", "demo.txt", "content", "novo conteudo")));
+                () -> tool.execute(Map.of("file_path", file.toString(), "content", "novo conteudo")));
 
         assertTrue(ex.getMessage().contains("Arquivo já existe"));
         assertEquals("conteudo original", Files.readString(file));
@@ -35,9 +35,9 @@ class FileWriteToolsTest {
         Path file = tempDir.resolve("demo.txt");
         Files.writeString(file, "prioridade=2\nprioridade=2\n");
 
-        UpdateFileTool tool = new UpdateFileTool(tempDir.toString());
+        UpdateFileTool tool = new UpdateFileTool();
         String result = tool.execute(Map.of(
-                "file_path", "demo.txt",
+                "file_path", file.toString(),
                 "old_text", "prioridade=2",
                 "new_text", "prioridade=1"
         ));
@@ -51,9 +51,9 @@ class FileWriteToolsTest {
         Path file = tempDir.resolve("demo.txt");
         Files.writeString(file, "prioridade=2\nprioridade=2\n");
 
-        UpdateFileTool tool = new UpdateFileTool(tempDir.toString());
+        UpdateFileTool tool = new UpdateFileTool();
         String result = tool.execute(Map.of(
-                "file_path", "demo.txt",
+                "file_path", file.toString(),
                 "old_text", "prioridade=2",
                 "new_text", "prioridade=1",
                 "replace_all", "true"
@@ -68,9 +68,9 @@ class FileWriteToolsTest {
         Path file = tempDir.resolve("demo.txt");
         Files.writeString(file, "if (this.tarefa.prioridade === 0) {\n    alert('Informe uma prioridade');\n    return;\n}\n");
 
-        UpdateFileTool tool = new UpdateFileTool(tempDir.toString());
+        UpdateFileTool tool = new UpdateFileTool();
         String result = tool.execute(Map.of(
-                "file_path", "demo.txt",
+                "file_path", file.toString(),
                 "old_text", "if (this.tarefa.prioridade === 0) { alert('Informe uma prioridade'); return; }",
                 "new_text", "if (this.tarefa.prioridade === 0) {\n    this.erro = 'Informe uma prioridade';\n    return;\n}"
         ));
@@ -84,10 +84,10 @@ class FileWriteToolsTest {
         Path file = tempDir.resolve("demo.txt");
         Files.writeString(file, "conteudo existente\n");
 
-        UpdateFileTool tool = new UpdateFileTool(tempDir.toString());
+        UpdateFileTool tool = new UpdateFileTool();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> tool.execute(Map.of(
-                        "file_path", "demo.txt",
+                        "file_path", file.toString(),
                         "old_text", "trecho inexistente",
                         "new_text", "novo"
                 )));

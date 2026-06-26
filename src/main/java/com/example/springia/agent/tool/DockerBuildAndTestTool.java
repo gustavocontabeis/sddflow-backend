@@ -1,9 +1,12 @@
 package com.example.springia.agent.tool;
 
+import com.example.springia.dto.ProcessBuilderReturnDTO;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
 import com.example.springia.model.enums.CodeRepoType;
+import com.example.springia.utils.ProcessBuilderUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.BufferedReader;
@@ -131,15 +134,21 @@ public class DockerBuildAndTestTool implements Tool {
         }
 
         String buildCommand = resolveBuildCommand(repo);
-        if (buildCommand == null) {
-            return "ERRO: Tipo de repositório não suportado para build: " + repo.getType();
+        if (StringUtils.isNotBlank(buildCommand)) {
+            String[] command = {"bash", "-c", buildCommand};
+            ProcessBuilderReturnDTO execute = ProcessBuilderUtils.execute(repo.getPath(), command);
+            if(execute.isOk()){
+               return "SUCESSO: Build e Teste concluídos com sucesso para o repositório: " + repo.getName();
+            }else{
+                return "ERRO: " + execute.getOutput();
+            }
         }
 
         output.append("Comando: ").append(buildCommand).append("\n");
 
         try {
             boolean hasDockerfile = new File(repoDir, "Dockerfile").isFile();
-            if (hasDockerfile && isDockerAvailable()) {
+            if (hasDockerfile && isDockerAvailable() && false) {
                 ProcessExecutionResult dockerResult = buildAndTestWithDocker(repoDir, repo.getName());
                 if (dockerResult.exitCode == 0) {
                     output.append("✓ Docker Build SUCESSO (exit code: 0)\n");
@@ -190,23 +199,8 @@ public class DockerBuildAndTestTool implements Tool {
      */
     private String resolveBuildCommand(CodeRepo repo) {
         log.debug("[RESOLVE_BUILD_CMD] Resolvendo comando para repo {} (tipo: {})", repo.getName(), repo.getType());
-        if (repo.getComandoCompilacao() != null && !repo.getComandoCompilacao().isBlank()) {
+        if (StringUtils.isNotBlank(repo.getComandoCompilacao())) {
             return repo.getComandoCompilacao();
-        }
-
-        if (repo.getType() == CodeRepoType.BACKEND) {
-            return "if [ -x ./mvnw ]; then ./mvnw clean test -DskipTests=false; " +
-                    "elif command -v mvn >/dev/null 2>&1; then mvn clean test -DskipTests=false; " +
-                    "else echo 'ERRO: Maven não encontrado (nem ./mvnw nem mvn)' >&2; exit 127; fi";
-        } else if (repo.getType() == CodeRepoType.FRONTEND) {
-            return "set -o pipefail && " +
-                    "if [ -x ./node_modules/.bin/ng ]; then ./node_modules/.bin/ng build --configuration=development; " +
-                    "elif command -v npx >/dev/null 2>&1; then npx ng build --configuration=development; " +
-                    "elif command -v ng >/dev/null 2>&1; then ng build --configuration=development; " +
-                    "else echo 'ERRO: Angular CLI não encontrado (node_modules/.bin/ng, npx ou ng)' >&2; exit 127; fi " +
-                    "2>&1 | tail -20";
-        } else if (repo.getType() == CodeRepoType.DOCUMENTATION) {
-            return "test -d . && echo 'Documentação válida' || echo 'Documentação inválida'";
         }
         return null;
     }

@@ -27,7 +27,7 @@ public class CreateFileTool implements Tool {
     @Override
     public Map<String, String> getParameters() {
         Map<String, String> params = new HashMap<>();
-        params.put("file_path", "Caminho do arquivo a criar (relativo ao basePath ou absoluto)");
+        params.put("file_path", "Caminho absoluto do arquivo a criar");
         params.put("content", "Conteúdo do arquivo");
         return params;
     }

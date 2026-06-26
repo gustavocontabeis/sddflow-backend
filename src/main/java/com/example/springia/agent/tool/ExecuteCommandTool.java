@@ -3,7 +3,6 @@ package com.example.springia.agent.tool;
 import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,11 +12,6 @@ import java.util.Map;
 @Slf4j
 public class ExecuteCommandTool implements Tool {
 
-    private final String basePath;
-
-    public ExecuteCommandTool(String basePath) {
-        this.basePath = basePath;
-    }
 
     @Override
     public String getName() {

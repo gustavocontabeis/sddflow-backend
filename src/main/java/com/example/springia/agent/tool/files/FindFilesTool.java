@@ -16,12 +16,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FindFilesTool implements Tool {
 
-    private final String basePath;
-
-    public FindFilesTool(String basePath) {
-        this.basePath = basePath;
-    }
-
     @Override
     public String getName() {
         return "find_files";
@@ -53,9 +47,7 @@ public class FindFilesTool implements Tool {
             throw new IllegalArgumentException("file_name é obrigatório");
         }
 
-        String fullPath = basePath + "/" + dirPath;
-
-        var path = Paths.get(FileUtils.fixPath(fullPath));
+        var path = Paths.get(FileUtils.fixPath(dirPath));
 
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);
