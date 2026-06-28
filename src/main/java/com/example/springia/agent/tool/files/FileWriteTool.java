@@ -19,8 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,30 +31,35 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FileWriteTool {
 
-    private static final DateTimeFormatter BACKUP_SUFFIX = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
-
     private final AgentProperties agentProperties;
     private final CodeDiffTool codeDiffTool;
 
-    @Tool(name = "write_files", description = "Aplica alteracoes diretamente em arquivos permitidos com backup automatico")
+    @Tool(name = "write_files", description = "Aplica alteracoes diretamente em arquivos permitidos")
     public List<FileWriteResult> write(
             @ToolParam(description = "Lista de alteracoes de arquivo a aplicar") List<FileChangeCommand> changes,
             @ToolParam(description = "Diretorio raiz para backups temporarios") String backupRoot
     ) {
-        log.info("{[WRITE_FILE]} aplicando {} alteracoes", changes == null ? 0 : changes.size());
+        log.info("{[WRITE_FILE]} aplicando {} alteracoes backupRoot={}", changes == null ? 0 : changes.size(), backupRoot);
         if (changes == null || changes.isEmpty()) {
             return List.of();
         }
 
         List<FileWriteResult> results = new ArrayList<>();
-        for (FileChangeCommand change : changes) {
-            log.trace("{[WRITE_LOOP]} processando item de alteracao");
-            results.add(writeOne(change, backupRoot));
+        try {
+            for (FileChangeCommand change : changes) {
+                log.trace("{[WRITE_LOOP]} processando item de alteracao");
+                results.add(writeOne(change));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("{[WRITE_FILE]} falha ao aplicar alteracoes", e);
+            throw new RuntimeException("Falha ao aplicar alteracoes de arquivo", e);
         }
+        log.info("{[WRITE_FILE]} retorno com {} resultados", results.size());
         return results;
     }
 
-    private FileWriteResult writeOne(FileChangeCommand change, String backupRoot) {
+    private FileWriteResult writeOne(FileChangeCommand change) {
         log.debug("{[WRITE_ONE]} iniciando escrita de arquivo");
         if (change == null) {
             throw new IllegalArgumentException("Alteracao nao pode ser nula");
@@ -68,11 +71,8 @@ public class FileWriteTool {
 
         try {
             String before = Files.exists(filePath) ? Files.readString(filePath) : "";
-            validateExpectedHash(change, before, filePath);
+            logExpectedHash(change, before, filePath);
             String backupPath = null;
-            if (Files.exists(filePath)) {
-                backupPath = createBackup(filePath, backupRoot, before);
-            }
 
             if (operation == ChangeOperation.DELETE) {
                 Files.deleteIfExists(filePath);
@@ -92,15 +92,18 @@ public class FileWriteTool {
         }
     }
 
-    private void validateExpectedHash(FileChangeCommand change, String before, Path filePath) {
-        log.debug("{[WRITE_HASH]} validando hash esperado");
+    private void logExpectedHash(FileChangeCommand change, String before, Path filePath) {
+        log.debug("{[WRITE_HASH]} validando hash esperado de forma nao bloqueante");
         if (change.expectedFileSha256() == null || change.expectedFileSha256().isBlank()) {
             return;
         }
         String currentHash = sha256(before == null ? "" : before);
-        if (!currentHash.equalsIgnoreCase(change.expectedFileSha256().trim())) {
-            throw new IllegalStateException("Hash divergente para arquivo: " + filePath);
+        if (currentHash.equalsIgnoreCase(change.expectedFileSha256().trim())) {
+            log.debug("{[WRITE_HASH]} hash esperado confirmado para {}", filePath);
+            return;
         }
+
+        log.warn("{[WRITE_HASH]} hash esperado divergente para {}, atualizando mesmo assim", filePath);
     }
 
     private String resolveUpdatedContent(FileChangeCommand change, String before, ChangeOperation operation) {
@@ -116,15 +119,14 @@ public class FileWriteTool {
             return applyPatches(before, change.patches());
         }
 
-        if (change.content() != null && Boolean.TRUE.equals(change.allowFullReplace())) {
+        if (change.content() != null) {
+            if (!Boolean.TRUE.equals(change.allowFullReplace())) {
+                log.warn("{[WRITE_UPD]} update por conteudo completo sem allowFullReplace=true em {}", change.filePath());
+            }
             return change.content();
         }
 
-        if (change.content() != null) {
-            throw new IllegalArgumentException("Substituicao completa bloqueada para update sem allowFullReplace=true");
-        }
-
-        throw new IllegalArgumentException("Update exige patches ou conteudo com allowFullReplace=true");
+        throw new IllegalArgumentException("Update exige patches ou conteudo");
     }
 
     private String applyPatches(String baseContent, List<FilePatchCommand> patches) {
@@ -145,12 +147,14 @@ public class FileWriteTool {
 
         int start;
         if (patch.occurrenceIndex() != null) {
-            if (patch.occurrenceIndex() < 1) {
-                throw new IllegalArgumentException("occurrenceIndex deve ser >= 1");
+            int normalizedOccurrenceIndex = patch.occurrenceIndex();
+            if (normalizedOccurrenceIndex < 1) {
+                log.warn("{[PATCH_OCC_IDX]} occurrenceIndex={} invalido, usando 1", normalizedOccurrenceIndex);
+                normalizedOccurrenceIndex = 1;
             }
-            start = findOccurrenceStart(content, patch.oldText(), patch.occurrenceIndex());
+            start = findOccurrenceStart(content, patch.oldText(), normalizedOccurrenceIndex);
             if (start < 0) {
-                throw new IllegalStateException("Patch nao encontrado para occurrenceIndex=" + patch.occurrenceIndex());
+                throw new IllegalStateException("Patch nao encontrado para occurrenceIndex=" + normalizedOccurrenceIndex);
             }
         } else {
             int count = countOccurrences(content, patch.oldText());
@@ -225,19 +229,6 @@ public class FileWriteTool {
             throw new IllegalArgumentException("Caminho fora dos diretorios permitidos: " + normalized);
         }
         return normalized;
-    }
-
-    private String createBackup(Path filePath, String backupRoot, String currentContent) throws IOException {
-        log.debug("{[WRITE_BACKUP]} criando backup de arquivo");
-        Path root = backupRoot == null || backupRoot.isBlank()
-                ? Path.of(System.getProperty("java.io.tmpdir"), "springia-backups")
-                : Path.of(backupRoot).toAbsolutePath().normalize();
-        Files.createDirectories(root);
-
-        String backupFileName = filePath.getFileName() + "." + LocalDateTime.now().format(BACKUP_SUFFIX) + ".bak";
-        Path backupFile = root.resolve(backupFileName);
-        Files.writeString(backupFile, currentContent == null ? "" : currentContent, StandardCharsets.UTF_8);
-        return backupFile.toString();
     }
 }
 

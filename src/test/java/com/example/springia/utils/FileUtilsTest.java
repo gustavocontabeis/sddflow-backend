@@ -1,9 +1,13 @@
 package com.example.springia.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Slf4j
 class FileUtilsTest {
 
     @TempDir
@@ -163,17 +168,6 @@ class FileUtilsTest {
         assertTrue(result.contains("<project></project>"));
     }
 
-    //@Test
-    void xxx() throws IOException {
-        Path dir = Paths.get("/tmp/tarefas-backend/src/main/java/br/com/dev/gustavo/tarefas");
-        Path dir1 = Paths.get("/tmp/tarefas-backend/src/main/resources/META-INF/resources");
-        Path directFile = Paths.get("/tmp/tarefas-backend/src/main/resources/application.properties");
-
-        String result = FileUtils.joinFileContents(new Path[]{dir, dir1, directFile});
-
-        System.out.println(result);
-
-    }
 }
 
 

@@ -9,12 +9,10 @@
 ## High-Value Code Map
 - API entrypoint: `src/main/java/com/example/springia/controller/ExecutionController.java` (`POST /executor-agent/execute`).
 - Execution orchestration loop: `src/main/java/com/example/springia/service/AgentExecutionService.java` (main agent loop with retry/feedback logic).
-- LLM integration and tool-calling: `src/main/java/com/example/springia/agent/service/SpringAiPromptGenerationClient.java`.
 - Tools (Spring AI `@Tool` beans): `src/main/java/com/example/springia/agent/tool/**` (discovery, files, compiler, feedback, diff).
 - Advisors (plan/scope/repair/verification): `src/main/java/com/example/springia/agent/advisor/**`.
 - Model/DTOs: `src/main/java/com/example/springia/agent/model/**` (GeneratedChangeSet, FileChangeCommand, CompilationResult, etc).
 - Runtime settings (roots/timeouts/retries/model): `src/main/resources/application.properties` + `src/main/java/com/example/springia/config/AgentProperties.java`.
-- Data persistence: `src/main/java/com/example/springia/entity/**` (Execution, Attempt, ArtifactChange, CompilationLog, ExecutionStatus).
 
 ## Commands Agents Should Use
 - Run tests: `mvn clean test` (backend standard and used by compile tool for `compileBy=command`).
@@ -27,10 +25,7 @@
 ## Code Contracts You Must Respect
 - `ExecutionRequest` currently accepts `taskDescription` and `compileBy` only (`src/main/java/com/example/springia/dto/ExecutionRequest.java`).
 - LLM response is parsed as `GeneratedChangeSet` JSON; parser tolerates fenced markdown and alias `files` for `changes` (`AgentExecutionServiceTest`).
-- File writes must stay inside `agent.backend-root` or `agent.frontend-root`; out-of-scope paths throw immediately (`ScopeAdvisor`, `FileWriteTool`).
-- Logging convention is strict in this codebase: `@Slf4j`, method-tag prefixes like `{[EXEC_SVC]}`, and actuator logger curl in class Javadoc (see `ExecutionController`, `CompilationTool`).
-- **Tool Annotations**: All agent tools use `@Tool` and `@ToolParam` from `org.springframework.ai.tool.annotation` (Spring AI framework). Tools must be `@Component` beans; they are auto-wired into `SpringAiPromptGenerationClient` and registered via `.tools(bean1, bean2, ...)` in the ChatClient call.
-- **Tool-Calling System Prompt**: Instructs the LLM to use tools when needed; the prompt is in `SpringAiPromptGenerationClient.TOOL_CALLING_SYSTEM_PROMPT` and enforces tool usage for discovery, validation, and compilation feedback.
+- **Tool Annotations**: All agent tools use `@Tool` and `@ToolParam` from `org.springframework.ai.tool.annotation` (Spring AI framework). Tools must be `@Component` beans; in the ChatClient call.
 
 ## JPA/DB Conventions Already in Use
 - Entities use Portuguese-prefixed columns (`nu_`, `co_`, `de_`, `dh_`, `ic_`) and explicit `@Column(name=...)`.
@@ -48,10 +43,6 @@ All tools are `@Component` beans located in `src/main/java/com/example/springia/
 - **FeedbackTool** (`feedback/`): Consolidates compilation errors, test failures, and diff summaries into structured feedback for next LLM iteration.
 - **ProcessExecutor** (`process/`): Underlying executor for running external processes with timeout and result capture (used by CompilationTool).
 
-## Integration Points / External Dependencies
-- OpenAI model access is via Spring AI (`spring.ai.openai.*` in `application.properties`, model set to `gpt-5.3-codex`).
-- Azure Spring dependency is present in `pom.xml`, but main runtime path here is Spring AI + JPA + PostgreSQL.
-- Tools are wired into `SpringAiPromptGenerationClient.generate()` via `.tools(projectDiscoveryTool, fileReadTool, compilationTool, feedbackTool, codeDiffTool)` (see line 66 in SpringAiPromptGenerationClient).
 
 ## Implemented Advisors
 Located in `src/main/java/com/example/springia/agent/advisor/**`:

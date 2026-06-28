@@ -94,6 +94,35 @@ class FileWriteToolTest {
     }
 
     @Test
+    void shouldTreatZeroOccurrenceIndexAsFirstOccurrence() throws Exception {
+        Path backend = Files.createDirectories(tempDir.resolve("backend-occurrence-zero"));
+        Path file = backend.resolve("src/main/java/App.java");
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, "class App {\n    int value;\n    int value;\n}\n");
+
+        AgentProperties props = new AgentProperties();
+        props.setBackendRoot(backend.toString());
+        props.setFrontendRoot(tempDir.resolve("frontend-occurrence-zero").toString());
+
+        FileWriteTool tool = new FileWriteTool(props, new CodeDiffTool());
+        var command = new FileChangeCommand(
+                file.toString(),
+                ChangeOperation.UPDATE,
+                null,
+                "update",
+                null,
+                false,
+                List.of(new FilePatchCommand("int value;", "int changed;", 0))
+        );
+
+        var results = tool.write(List.of(command), tempDir.resolve("backups").toString());
+
+        assertEquals(1, results.size());
+        assertTrue(results.get(0).written());
+        assertEquals("class App {\n    int changed;\n    int value;\n}\n", Files.readString(file));
+    }
+
+    @Test
     void shouldFailWhenExpectedHashDiffers() throws Exception {
         Path backend = Files.createDirectories(tempDir.resolve("backend-hash"));
         Path file = backend.resolve("src/main/java/App.java");

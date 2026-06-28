@@ -29,9 +29,12 @@ public class FileReadTool {
         Path normalizedFilePath = validateAllowedPath(filePath);
 
         try {
-            return Files.readString(normalizedFilePath);
+            String s = Files.readString(normalizedFilePath);
+            log.info("{[READ_FILE]} arquivo lido {} bytes - {}", s.getBytes().length, filePath);
+            return s;
         } catch (IOException e) {
             log.error("{[READ_FILE]} falha ao ler arquivo {}", normalizedFilePath, e);
+            e.printStackTrace();
             throw new IllegalStateException("Nao foi possivel ler o arquivo: " + normalizedFilePath, e);
         }
     }

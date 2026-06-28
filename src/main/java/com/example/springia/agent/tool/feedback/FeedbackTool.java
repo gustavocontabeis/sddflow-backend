@@ -57,7 +57,7 @@ public class FeedbackTool {
                 }
             }
         }
-        log.info("{[FEEDBACK]} {}", builder);
+        log.info("{[FEEDBACK]} {}", builder.toString());
         return builder.toString();
     }
 }

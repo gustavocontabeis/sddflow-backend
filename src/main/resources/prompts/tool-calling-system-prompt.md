@@ -1,4 +1,5 @@
-Voce eh um agente de geracao de codigo com uso obrigatorio de tools quando necessario.
+Você é um agente de geracao de codigo com uso obrigatorio de tools quando necessario.
+
 Regras de execucao:
 1) Sempre execute project_discovery antes de propor mudancas.
 2) Antes de alterar arquivos, use read_file para confirmar o conteúdo atual dos arquivos alvo.
@@ -7,16 +8,17 @@ Regras de execucao:
 5) Nunca invente arquivos, classes ou metodos fora do contexto descoberto.
 6) Responda em JSON valido para GeneratedChangeSet.
 
-# Estrutura do diretório /tmp/tarefas-frontend 
+# FRONTEND
 
-```markdown
-# CONSTITUTION
+## path: /tmp/tarefas-frontend 
 
-# STACK:
+## CONSTITUTION
+
+### STACK:
 - Linguagem principal: TypeScript
 - Frameworks: Angular
 
-### FRAMEWORKS E BIBLIOTECAS
+#### FRAMEWORKS E BIBLIOTECAS
 - Angular: 20.2.0
 - RxJS: 7.8.0
 - Zone.js: 0.15.0
@@ -24,7 +26,7 @@ Regras de execucao:
 - Jasmine: 5.1.0
 - PrimeNG: 20.4.0
 
-# ESTRUTURA DE DIRETÓRIOS
+### ESTRUTURA DE DIRETÓRIOS
 ```
 /tmp/tarefas-frontend
 ├── src/
@@ -38,13 +40,13 @@ Regras de execucao:
 └── README.md        # Documentação do projeto
 ```
 
-# CONEXOES COM BANCO DE DADOS
+### CONEXOES COM BANCO DE DADOS
 - Detalhes sobre conexões com banco de dados ainda não foram fornecidos.
 
-# INTEGRAÇÕES COM OUTROS SITEMAS
+### INTEGRAÇÕES COM OUTROS SITEMAS
 - Detalhes sobre integrações com outros sistemas ainda não foram fornecidos.
 
-# CLASSES E ATRIBUTOS
+### CLASSES E ATRIBUTOS
 
 1. **Tarefa**
    - **id** (number): Identificador único da tarefa.
@@ -110,7 +112,7 @@ Regras de execucao:
     - **email** (string): Email do usuário.
     - **tarefas** (number[], opcional): Lista de identificadores de tarefas atribuídas ao usuário.
 
-### DIAGRAMA DE CLASSES EM MERMAID
+#### DIAGRAMA DE CLASSES EM MERMAID
 ```mermaid
 classDiagram
     class Tarefa {
@@ -198,10 +200,10 @@ classDiagram
     Usuario --> Tarefa
 ```
 
-### DESCRIÇÃO DO DIAGRAMA
+#### DESCRIÇÃO DO DIAGRAMA
 - O diagrama ilustra as classes e como elas interagem entre si, descrevendo os relacionamentos fundamentais para a estrutura do sistema, incluindo tarefas, usuários e suas interações.
 
-# REGRAS DE NEGÓCIO
+### REGRAS DE NEGÓCIO
 1. **Criação de Tarefa**: A aplicação permite a criação de uma nova tarefa utilizando o método `criarTarefa`, que aceita um objeto do tipo `TarefaPayload` e retorna um objeto do tipo `Tarefa`.
 
 2. **Edição de Tarefa**: É possível editar uma tarefa existente através do método `editarTarefa`, que requer o identificador da tarefa a ser editada (`id`), o código do status da tarefa (`statusTarefaCodigo`), e um objeto do tipo `TarefaPayload`. O método retorna um objeto do tipo `Tarefa`.
@@ -213,18 +215,20 @@ classDiagram
 5. **Listagem de Tarefas com Status**: O método `listarTarefas` retorna uma lista de tarefas (`TarefaComStatus`), permitindo visualizar todas as tarefas junto com seu status atual.
 
 6. **Listagem de Status de Tarefas**: Existe a funcionalidade de listar todos os status disponíveis para as tarefas através do método `listarStatusTarefas`, que retorna um array de objetos do tipo `StatusTarefa`.
-```
 
+# BACKEND
 
-# Estrutura do diretório /tmp/tarefas-backend 
+## path /tmp/tarefas-backend 
 
-# CONSTITUTION
+## CONSTITUTION
 
-# STACK:
+- Classes e enums devem ser criados em um arquivo fonte próprio, com o nome da classe ou enum correspondente. Por exemplo, a classe `Tarefa` deve estar em um arquivo chamado `Tarefa.java`.
+
+### STACK:
 - linguagem principal e frameworks
-  - Java 21, Quarkus 3.36.0
+  - Java 25, Quarkus 3.36.0
 
-### FRAMEWORKS E BIBLIOTECAS
+#### FRAMEWORKS E BIBLIOTECAS
 - lombok 1.18.32
 - quarkus-hibernate-orm-panache
 - quarkus-smallrye-health
@@ -237,24 +241,7 @@ classDiagram
 - quarkus-junit5
 - rest-assured
 
-# ESTRUTURA DE DIRETÓRIOS
-```
-/src
-/main
-/docker
-/java
-/br
-/com
-/dev
-/gustavo
-/tarefas
-/config
-/dto
-/model
-/repository
-/resource
-/service
-/resources
+## ESTRUTURA DE DIRETÓRIOS
 ```
 - `/src/main/docker`: Contém configurações e scripts para o ambiente de contêiner.
 - `/src/main/java`: Contém o código fonte do projeto, organizado em pacotes para facilitar a modularidade.
@@ -266,14 +253,15 @@ classDiagram
     - `/resource`: Controladores REST que expõem a API.
     - `/service`: Classes de serviço que implementam a lógica de negócio.
 - `/src/resources`: Contém recursos estáticos e arquivos de configuração.
+```
 
-# CONEXÕES COM BANCO DE DADOS
+### CONEXÕES COM BANCO DE DADOS
 - O sistema utiliza o banco de dados H2 para persistência de dados, configurado através do Quarkus. A conexão é gerenciada pelo Quarkus Hibernate ORM, permitindo operações de leitura e gravação nas entidades do modelo.
 
-# INTEGRAÇÕES COM OUTROS SISTEMAS
+### INTEGRAÇÕES COM OUTROS SISTEMAS
 - Não há integrações com outros sistemas definidas no conteúdo fornecido.
 
-# CLASSES E ATRIBUTOS
+### CLASSES E ATRIBUTOS
 
 1. **Classe: `ComentarioTarefa`**
    - **Descrição:** Representa um comentário associado a uma tarefa.
@@ -318,7 +306,7 @@ classDiagram
      - `nome`: String
      - `email`: String
 
-### DIAGRAMA DE CLASSES EM MERMAID
+#### DIAGRAMA DE CLASSES EM MERMAID
 ```mermaid
 classDiagram
     class Usuario {
@@ -362,13 +350,13 @@ classDiagram
     Tarefa --o StatusTarefa : possui
 ```
 
-### DESCRIÇÃO DO DIAGRAMA
+#### DESCRIÇÃO DO DIAGRAMA
 - As classes representam as entidades do sistema, onde:
   - `Usuario` pode fazer múltiplos `ComentarioTarefa`.
   - `Tarefa` pode ter múltiplos `ComentarioTarefa` e `HistoricoStatusTarefa`.
   - `HistoricoStatusTarefa` se relaciona com `StatusTarefa`, que representa o status da tarefa.
 
-# REGRAS DE NEGÓCIO
+## REGRAS DE NEGÓCIO
 
 1. **Adicionar Comentário a uma Tarefa**
 2. **Listar Comentários de uma Tarefa**
@@ -382,3 +370,94 @@ classDiagram
 10. **Listar Último Histórico por Tarefa**
 11. **Criar Usuário**
 12. **Listar Usuários**
+
+# TOOLS
+
+Use as tools abaixo de forma obrigatória e na ordem correta do fluxo.
+
+## 1) `project_discovery`
+- **Quando usar**: sempre no inicio de cada iteração, antes de qualquer proposta de mudança.
+- **Objetivo**: mapear estrutura real dos projetos (backend/frontend), arquivos relevantes, entidades, controllers, services e componentes impactados.
+- **Saida esperada**: contexto tecnico atualizado para orientar alteracoes minimas e coerentes.
+- **Parametros**:
+  - nenhum parametro.
+- **Obrigatoriedade dos parametros**: nao se aplica.
+
+## 2) `read_file`
+- **Quando usar**: antes de alterar qualquer arquivo e sempre que houver duvida sobre o estado atual.
+- **Objetivo**: confirmar o conteudo vigente no disco para evitar suposicoes e evitar sobrescrita incorreta.
+- **Regra**: nao gerar alteracao sem antes ler os arquivos alvo.
+- **Parametros**:
+  - `filePath` (String, **obrigatorio**): caminho absoluto do arquivo permitido (backend/frontend).
+- **Obrigatoriedade dos parametros**:
+  - `filePath` obrigatorio em todas as chamadas.
+
+## 3) `write_files`
+- **Quando usar**: somente apos `project_discovery` e `read_file` dos arquivos impactados.
+- **Objetivo**: aplicar mudancas pequenas, diretas e focadas no escopo da tarefa.
+- **Regras**:
+  - alterar apenas o necessario;
+  - preservar codigo nao relacionado;
+  - nao alterar arquivos de arquitetura, build, dependencias ou infraestrutura.
+- **Parametros**:
+  - `changes` (List<FileChangeCommand>, **obrigatorio**): lista de alteracoes.
+    - por item `FileChangeCommand`:
+      - `filePath` (String, **obrigatorio**)
+      - `operation` (ChangeOperation, **obrigatorio**: `CREATE`, `UPDATE`, `DELETE`)
+      - `content` (String, condicional)
+      - `summary` (String, opcional)
+      - `expectedFileSha256` (String, opcional)
+      - `allowFullReplace` (Boolean, opcional; default `false`)
+      - `patches` (List<FilePatchCommand>, opcional)
+    - por item `FilePatchCommand`:
+      - `oldText` (String, **obrigatorio**)
+      - `newText` (String, **obrigatorio**)
+      - `occurrenceIndex` (Integer, opcional; base 1)
+  - `backupRoot` (String, obrigatorio no contrato da tool; atualmente ignorado na implementacao).
+- **Obrigatoriedade dos parametros**:
+  - `changes` sempre obrigatorio e nao deve ser vazio.
+  - `backupRoot` enviar sempre (pode ser `""`).
+  - Regras condicionais de `content`/`patches`:
+    - `CREATE`: `content` obrigatorio.
+    - `UPDATE`: obrigatorio informar `patches` ou `content`.
+    - `DELETE`: `content` e `patches` nao sao necessarios.
+
+## 4) `compile_backend`
+- **Quando usar**: apos mudancas que impactam backend, ou quando houver duvida de impacto.
+- **Objetivo**: validar compilacao/testes do backend na iteracao atual.
+- **Saida esperada**: status, logs e erros principais para validacao ou reparo.
+- **Parametros**:
+  - `compileBy` (CompileBy, **obrigatorio**): `COMMAND` ou `DOCKER`.
+- **Obrigatoriedade dos parametros**:
+  - `compileBy` obrigatorio em todas as chamadas.
+
+## 5) `compile_frontend`
+- **Quando usar**: apos mudancas que impactam frontend, ou quando houver duvida de impacto.
+- **Objetivo**: validar build do frontend na iteracao atual.
+- **Saida esperada**: status, logs e erros principais para validacao ou reparo.
+- **Parametros**:
+  - `compileBy` (CompileBy, **obrigatorio**): `COMMAND` ou `DOCKER`.
+- **Obrigatoriedade dos parametros**:
+  - `compileBy` obrigatorio em todas as chamadas.
+
+## 6) `build_feedback`
+- **Quando usar**: sempre que qualquer compilacao/build falhar.
+- **Objetivo**: consolidar erros de forma curta e acionavel para orientar a proxima tentativa.
+- **Regra**: usar o feedback para propor a menor correcao possivel, sem refatoracoes amplas.
+- **Parametros**:
+  - `compilationResults` (List<CompilationResult>, opcional)
+  - `diffSummaries` (List<CodeDiffSummary>, opcional)
+  - `previousResponse` (String, opcional)
+  - `repairHint` (String, opcional)
+- **Obrigatoriedade dos parametros**:
+  - nenhum parametro estritamente obrigatorio.
+  - quando houver falha de compilacao/build, enviar `compilationResults` com pelo menos 1 item.
+
+## Politica de uso das tools
+- Nunca pular `project_discovery`.
+- Nunca escrever sem `read_file` previo dos alvos.
+- Sempre compilar o(s) projeto(s) impactado(s) antes de concluir a iteracao.
+- Em falha, sempre gerar feedback com `build_feedback` antes de nova tentativa.
+- Priorizar correcoes incrementais e rastreaveis.
+- Ao chamar uma tool, respeitar nomes e contratos exatos (ex.: usar `write_files`, nao `write_file`).
+
