@@ -25,7 +25,6 @@ O sistema precissa fazer o seguinte fluxo:
 - Cada repositório possui um arquivo Dockerfile
 - O Log de compilação deverá ser o log da compilação na imagem Docker
 - Se necessário, crie recursos do Spring AI como Tools, Advisors, etc, para evitar alucinações
-- Se precisar executar a aplicação execute o comando `setJava21` para setar o Java 21 e o Maven no Ubuntu
 - Antes de alterar qualquer arquivo Java, leia o arquivo completo com `read_file` e copie exatamente os trechos existentes para `update_file`
 - Nunca use `create_file` para sobrescrever arquivo existente
 - Antes de gerar código novo, confira `package`, `imports`, classes e assinaturas existentes

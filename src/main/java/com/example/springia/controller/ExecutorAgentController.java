@@ -42,7 +42,8 @@ public class ExecutorAgentController {
      *   -H "Content-Type: application/json" \
      *   -d '{
      *     "taskDescription": "Crie arquivos de teste-01.txt a teste-10.txt em clone-repo com conteúdo Hello World",
-     *     "basePath": "/tmp"
+     *     "basePath": "/tmp",
+     *     "projectId": 1
      *   }'
      * }</pre>
      */
