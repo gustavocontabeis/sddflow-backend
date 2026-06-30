@@ -6,6 +6,10 @@ import com.example.springia.model.Project;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -19,10 +23,7 @@ import java.util.regex.Pattern;
  * 3. LLM decide ação (Acting) - qual tool usar
  * 4. Executa tool e observa resultado
  * 5. Repete até chegar a Finalizar
- *
- * <pre>
- * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.loop.AgentLoop" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'
- * </pre>
+ * {@code curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.loop.AgentLoop" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'}
  */
 @Slf4j
 public class AgentLoop {
@@ -52,7 +53,7 @@ public class AgentLoop {
     public AgentExecution execute(String input, Project project) throws Exception {
         String executionId = UUID.randomUUID().toString();
         LocalDateTime startTime = LocalDateTime.now();
-
+        String systemPrompt = loadSystemPrompt(project);
         AgentExecution execution = AgentExecution.builder()
                 .executionId(executionId)
                 .input(input)
@@ -64,19 +65,17 @@ public class AgentLoop {
         log.info("[AGENT] Iniciando execução id={} input_length={}", executionId, input.length());
 
         try {
-            String context = buildInitialContext(input);
+            String context = buildInitialContext(input, systemPrompt);
             int stepCount = 0;
             String lastActionSignature = null;
             int repeatedActionCount = 0;
-            boolean alreadyValidatedBuild = false;
-
             while (stepCount < maxSteps) {
                 stepCount++;
                 log.debug("[AGENT] Passo {} de {}", stepCount, maxSteps);
                 //log.debug("[AGENT] Prompt: {}", context);
 
                 // Chamada ao LLM para decidir ação
-                String llmResponse = callLLM(context);
+                String llmResponse = callLLM(systemPrompt, context);
                 log.debug("[AGENT] LLM Response (passo {}): {}", stepCount, llmResponse);
 
                 // Parse da resposta
@@ -85,7 +84,7 @@ public class AgentLoop {
 
                 // Se é final, executa gate de validação antes de aceitar
                 if (step.isFinal()) {
-                    if (!alreadyValidatedBuild && project != null && !project.getRepos().isEmpty()) {
+                    if (project != null && !project.getRepos().isEmpty()) {
                         log.info("[AGENT] Gate de finalização acionado: validando build/test com Docker");
 
                         // Executa a ferramenta de validação
@@ -104,7 +103,6 @@ public class AgentLoop {
                         if (validationResult.contains("✅ VALIDAÇÃO COMPLETA")) {
                             log.info("[AGENT] Validação passou: código está pronto para produção");
                             step.setObservation("Validação de build/test passou. Código aprovado no gate de finalização.");
-                            alreadyValidatedBuild = true;
                             execution.setFinalAnswer(step.getFinalAnswer());
                             execution.setStatus("SUCCESS");
                             break;
@@ -116,13 +114,6 @@ public class AgentLoop {
                             stepCount++; // Continua o loop
                             continue;
                         }
-                    } else if (alreadyValidatedBuild) {
-                        log.debug("[AGENT] Build já foi validado nesta sessão, finalizando");
-                        step.setObservation("Finalizacao aprovada no gate de build/test via Docker.");
-                        step.setToolResult(null);
-                        execution.setFinalAnswer(step.getFinalAnswer());
-                        execution.setStatus("SUCCESS");
-                        break;
                     }
                 }
 
@@ -180,11 +171,34 @@ public class AgentLoop {
         return execution;
     }
 
+    private String loadSystemPrompt(Project project) {
+        try {
+            ClassPathResource resource = new ClassPathResource("prompts/system-prompt.md");
+            if (!resource.exists()) {
+                log.warn("[SYSTEM_PROMPT] Arquivo prompts/system-prompt.md não encontrado no classpath");
+                return "";
+            }
+
+            String prompt = resource.getContentAsString(StandardCharsets.UTF_8);
+            if (project != null && project.getName() != null && !project.getName().isBlank()) {
+                log.debug("[SYSTEM_PROMPT] Prompt carregado para projeto {}", project.getName());
+            } else {
+                log.debug("[SYSTEM_PROMPT] Prompt carregado sem contexto de projeto");
+            }
+            return prompt;
+        } catch (IOException e) {
+            log.error("[SYSTEM_PROMPT] Erro ao carregar prompts/system-prompt.md", e);
+            return "";
+        }
+    }
+
     /**
      * Constrói o contexto inicial para o primeiro prompt ao LLM
      */
-    private String buildInitialContext(String input) {
-        return """
+    private String buildInitialContext(String input, String systemPrompt) {
+        String promptBase = (systemPrompt == null || systemPrompt.isBlank()) ? "" : systemPrompt + "\n\n";
+
+        return promptBase + """
         Você é um especialista em engenharia de software que segue o padrão ReAct (Reasoning + Acting) Especialista em Java e Angular.
         
         TAREFA: Analisar e executar as tarefas descritas no código/especificação fornecida.
@@ -236,9 +250,9 @@ public class AgentLoop {
     /**
      * Chama o LLM para decidir a próxima ação
      */
-    private String callLLM(String context) {
+    private String callLLM(String systemPrompt,  String context) {
         return chatClient.prompt()
-                .system("Você é um arquiteto de software especialista em Java e Angular. Conhece perfeitamente a sintaxe dessas linguagens.")
+                .system(systemPrompt)
                 .user(context)
                 .call()
                 .content();
