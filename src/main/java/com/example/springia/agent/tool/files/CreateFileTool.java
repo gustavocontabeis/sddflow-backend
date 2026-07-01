@@ -1,17 +1,24 @@
 package com.example.springia.agent.tool.files;
 
+import com.example.springia.agent.responseapi.request.RequestToolDefinition;
+import com.example.springia.agent.responseapi.request.RequestToolParameters;
+import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Ferramenta para criar arquivos no filesystem
  */
 @Slf4j
+@Component
 public class CreateFileTool implements Tool {
 
     @Override
@@ -61,6 +68,30 @@ public class CreateFileTool implements Tool {
 
         log.info("[TOOL] Arquivo criado: {}", path);
         return "Arquivo criado com sucesso: " + path;
+    }
+
+    public static RequestToolDefinition createTool(){
+        return RequestToolDefinition.builder()
+                .type("function")
+                .name("create_file")
+                .description("Cria um NOVO arquivo no filesystem (não sobrescreve arquivo existente)")
+                .parameters(RequestToolParameters.builder()
+                        .type("object")
+                        .properties(Map.of(
+                                "file_path", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Caminho absoluto do arquivo a criar")
+                                        .build(),
+                                "content", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Conteúdo do arquivo")
+                                        .build()
+                        ))
+                        .required(List.of("file_path", "content"))
+                        .additionalProperties(false)
+                        .build())
+                .strict(true)
+                .build();
     }
 }
 

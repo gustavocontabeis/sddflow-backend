@@ -3,10 +3,10 @@ package com.example.springia.agent.tool;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
-import com.example.springia.model.enums.CodeRepoType;
 import com.example.springia.utils.ProcessBuilderUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.BufferedReader;
@@ -29,10 +29,15 @@ import java.util.Map;
  * {@code curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.tool.DockerBuildAndTestTool" -H "Content-Type: application/json" -d '{"configuredLevel":"TRACE"}'}
  */
 @Slf4j
+@Component
 public class DockerBuildAndTestTool implements Tool {
 
-    private final Project project;
+    private Project project;
     private static final int MAX_LOG_LENGTH = 2000;
+
+    public DockerBuildAndTestTool() {
+        log.info("[CONSTRUCTOR] Inicializando ferramenta sem projeto vinculado");
+    }
 
     public DockerBuildAndTestTool(Project project) {
         log.info("[CONSTRUCTOR] Inicializando ferramenta com projeto {}", project != null ? project.getName() : "<null>");
@@ -308,6 +313,11 @@ public class DockerBuildAndTestTool implements Tool {
             this.exitCode = exitCode;
             this.output = output;
         }
+    }
+
+    public void setProjetc(Project projetc){
+        log.info("[SET_PROJECT] Atualizando projeto para {}", projetc != null ? projetc.getName() : "<null>");
+        this.project = projetc;
     }
 }
 
