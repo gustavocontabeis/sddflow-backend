@@ -82,4 +82,27 @@ public class JsonUtils {
         return OBJECT_MAPPER;
     }
 
+    public static <T> T toObject(String arguments, Class<T> classe) {
+        if (arguments == null) {
+            return null;
+        }
+
+        if (classe == null) {
+            throw new IllegalArgumentException("Classe nao pode ser nula");
+        }
+
+        try {
+            if (String.class.equals(classe)) {
+                if (arguments.startsWith("\"") && arguments.endsWith("\"")) {
+                    return OBJECT_MAPPER.readValue(arguments, classe);
+                }
+
+                return classe.cast(arguments);
+            }
+
+            return OBJECT_MAPPER.readValue(arguments, classe);
+        } catch (IOException e) {
+            throw new IllegalStateException("Erro ao converter JSON para tipo informado", e);
+        }
+    }
 }

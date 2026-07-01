@@ -1,5 +1,8 @@
 package com.example.springia.agent.tool.files;
 
+import com.example.springia.agent.responseapi.request.RequestToolDefinition;
+import com.example.springia.agent.responseapi.request.RequestToolParameters;
+import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
@@ -182,6 +185,38 @@ public class GrepFilesTool implements Tool {
             return booleanValue;
         }
         return Boolean.parseBoolean(rawValue.toString().trim());
+    }
+
+    public static RequestToolDefinition createTool(){
+        return RequestToolDefinition.builder()
+                .type("function")
+                .name("grep_files")
+                .description("Busca recursivamente por um padrão de texto em arquivos dentro de um diretório")
+                .parameters(RequestToolParameters.builder()
+                        .type("object")
+                        .properties(Map.of(
+                                "path", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Path do diretório raiz da busca")
+                                        .build(),
+                                "pattern", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Texto ou expressão regular a buscar")
+                                        .build(),
+                                "file_extension", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Extensões separadas por vírgula (opcional). Ex: .java,.xml")
+                                        .build(),
+                                "ignore_case", RequestToolProperty.builder()
+                                        .type("boolean")
+                                        .description("Ignorar maiúsculas/minúsculas (opcional). Ex: true")
+                                        .build()
+                        ))
+                        .required(List.of("path", "pattern", "file_extension", "ignore_case"))
+                        .additionalProperties(false)
+                        .build())
+                .strict(true)
+                .build();
     }
 }
 

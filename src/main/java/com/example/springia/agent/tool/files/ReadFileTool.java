@@ -1,11 +1,15 @@
 package com.example.springia.agent.tool.files;
 
+import com.example.springia.agent.responseapi.request.RequestToolDefinition;
+import com.example.springia.agent.responseapi.request.RequestToolParameters;
+import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,5 +53,25 @@ public class ReadFileTool implements Tool {
         log.info("[TOOL] Arquivo lido: {} ({}bytes)", path, content.length());
         return content;
     }
-}
 
+    public static RequestToolDefinition createTool(){
+        return RequestToolDefinition.builder()
+                .type("function")
+                .name("read_file")
+                .description("Lê o conteúdo de um arquivo existente no filesystem")
+                .parameters(RequestToolParameters.builder()
+                        .type("object")
+                        .properties(Map.of(
+                                "file_path", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Caminho absoluto do arquivo a ler")
+                                        .build()
+                        ))
+                        .required(List.of("file_path"))
+                        .additionalProperties(false)
+                        .build())
+                .strict(true)
+                .build();
+    }
+
+}

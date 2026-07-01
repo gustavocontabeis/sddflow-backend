@@ -1,5 +1,8 @@
 package com.example.springia.agent.tool.files;
 
+import com.example.springia.agent.responseapi.request.RequestToolDefinition;
+import com.example.springia.agent.responseapi.request.RequestToolParameters;
+import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -73,4 +76,29 @@ public class FindFilesTool implements Tool {
         log.info("[TOOL] Busca por arquivo '{}' em {} retornou {} itens", fileName, path, itens.size());
         return result;
     }
+
+    public static RequestToolDefinition createTool(){
+        return RequestToolDefinition.builder()
+                .type("function")
+                .name("find_files")
+                .description("Busca arquivos por nome, recursivamente, a partir de um diretório específico")
+                .parameters(RequestToolParameters.builder()
+                        .type("object")
+                        .properties(Map.of(
+                                "directory_path", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Path do diretório raiz da busca")
+                                        .build(),
+                                "file_name", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Nome do arquivo para busca exata (ignora maiúsculas/minúsculas)")
+                                        .build()
+                        ))
+                        .required(List.of("directory_path", "file_name"))
+                        .additionalProperties(false)
+                        .build())
+                .strict(true)
+                .build();
+    }
+
 }
