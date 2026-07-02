@@ -80,23 +80,6 @@ Project "1" --> "0..*" CodeRepo : repos
 CodeRepo "1" --> "1" Project : project
 ```
 
-
-# IMPORTANTE ::: PROBELA A SER RESOLVIDO :::
-
-Você está gerando código java que nem compila.
-
-Os problemas mais comuns são:
-- Classes declaradas no código que não existem no projeto.
-- Uso de classes sem o import.
-- Declarando classe publica dentro de arquivo de outra classe
-- Sobrescrevendo código existente sem necessidade
-- e por aí vai.
--
-Este arquivo mostra o código que você gerou. Criei ele usando o comando `git diff` dentro do repositório. leia este arquivo e veja os erro.
-`/tmp/tarefas-diff-total.txt`
-
-Implemente a sujestão abaixo para corrigir o problema de geração de código java que não compila.
-
 -------------------------------------------------------------------
 
 # AI Autonomous Code Generation Agent - Arquitetura Correta

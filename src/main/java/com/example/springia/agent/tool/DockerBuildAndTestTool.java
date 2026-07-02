@@ -69,6 +69,7 @@ public class DockerBuildAndTestTool implements Tool {
     @Override
     public String execute(Map<String, String> params) throws Exception {
         log.info("[EXECUTE] Iniciando execução com parâmetros: {}", params);
+
         if (project == null || project.getRepos() == null || project.getRepos().isEmpty()) {
             log.warn("[EXECUTE] ERRO: Nenhum repositório configurado no projeto para validação.");
             return "ERRO: Nenhum repositório configurado no projeto para validação.";

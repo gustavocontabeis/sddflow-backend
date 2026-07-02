@@ -1,7 +1,7 @@
 package com.example.springia.controller;
 
-import com.example.springia.agent.CodeGeneratorAgent;
-import com.example.springia.agent.CodeGeneratorAzureSdkAgent;
+import com.example.springia.agent.client.CodeGeneratorAzureSdkAgent;
+import com.example.springia.agent.client.CodeGeneratorResponseAPIAgent;
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExecutorAgentController {
 
-    private final CodeGeneratorAgent codeGeneratorAgent;
+    private final CodeGeneratorResponseAPIAgent codeGeneratorResponseAPIAgent;
     private final CodeGeneratorAzureSdkAgent codeGeneratorAzureSdkAgent;
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
@@ -89,14 +89,16 @@ public class ExecutorAgentController {
     }
 
     /**
-     * <p>{@code curl -X POST http://localhost:8080/executor-agent/execute2 -H "Content-Type: application/json" -d '{}'}</p>
-     *
+     * http://localhost:8080/executor-agent/execute-response-api-agent
      * @return resposta textual do gerador de código
      */
-    @PostMapping("/execute2")
-    public ResponseEntity<String> execute2() {
-        log.info("[EXECUTE_2] POST /execute2");
+    @GetMapping("/execute-responses-api-agent")
+    public ResponseEntity<String> executeResponseApiAgent() {
+
+        log.info("[EXECUTE_2] POST /execute-responses-api-agent");
+
         try {
+
             resolveProject(1L);
 
             String userPrompt = """
@@ -107,8 +109,10 @@ public class ExecutorAgentController {
                     - Service
                     - Endpoints REST.
                     """;
-            String response = codeGeneratorAgent.generateJavaCode(userPrompt);
-            return ResponseEntity.ok(response);
+
+            codeGeneratorResponseAPIAgent.generateCode(1L, userPrompt);
+
+            return ResponseEntity.ok("{}");
 
         } catch (Exception e) {
             log.error("[EXECUTE_2] Erro ao executar task", e);
@@ -118,11 +122,12 @@ public class ExecutorAgentController {
     }
 
     /**
-     * curl -X GET http://localhost:8080/executor-agent/execute-azure-sdk -H "Content-Type: application/text"
+     * curl -X GET http://localhost:8080/executor-agent/execute-azure-sdk-agent -H "Content-Type: application/text"
      * @return
      */
-    @GetMapping("/execute-azure-sdk")
+    @GetMapping("/execute-azure-sdk-agent")
     public ResponseEntity<String> executeAzureSdk() {
+
         log.info("[EXECUTE_2] POST /execute-azure-sdk");
 
         try {

@@ -1,4 +1,4 @@
-package com.example.springia.agent;
+package com.example.springia.agent.client;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;

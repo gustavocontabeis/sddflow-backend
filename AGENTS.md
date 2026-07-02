@@ -53,13 +53,13 @@ curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.
 
 ---
 
-### 2. **CodeGeneratorAgent**
-**Localização:** `com.example.springia.agent.CodeGeneratorAgent`
+### 2. **CodeGeneratorResponseAPIAgent**
+**Localização:** `com.example.springia.agent.client.CodeGeneratorResponseAPIAgent`
 
 **Responsabilidade:** Gera código Java usando modelo gpt-5.3-codex com Responses API
 
 **Características:**
-- ✅ Usa RestClient para chamar Responses API (não suporta Tools)
+- ✅ Usa RestClient para chamar Responses API (suporta Tools)
 - ✅ Configurado para modelo customizado gpt-5.3-codex
 - ✅ Endpoint: `https://gustavocontabeis-9085-resource.services.ai.azure.com/openai/v1/responses`
 - ✅ Com Tools/Function Calling
@@ -74,7 +74,7 @@ As classes de DTO devem ficar em `com.example.springia.agent.responseapi.request
 As classes de DTO devem ficar em `com.example.springia.agent.responseapi.response`
 
 **Métodos:**
-- `generateJavaCode(String specification)` - Gera código Java a partir de especificação
+- `generateCode(String userPrompt)` - Gera código Java a partir de especificação
 
 **Configuração:**
 ```properties
@@ -84,7 +84,30 @@ spring.ai.openai.base-url=https://gustavocontabeis-9085-resource.services.ai.azu
 
 ---
 
-### 3. **SddPlanServiceAgent**
+### 3. **CodeGeneratorOpenApiAgent**
+**Localização:** `com.example.springia.agent.client.CodeGeneratorOpenApiAgent`
+
+**Responsabilidade:** Gera código Java usando modelo gpt-5.3-codex com Responses API usando `com.openai.client.OpenAIClient` 
+
+**Características:**
+- ✅ Usa `com.openai.client.OpenAIClient` para chamar Responses API (suporta Tools)
+- ✅ Configurado para modelo customizado gpt-5.3-codex
+- ✅ Endpoint: `https://gustavocontabeis-9085-resource.services.ai.azure.com/openai/v1/responses`
+- ✅ Com Tools/Function Calling
+- ✅ Carrega o System Prompt de `src/main/resources/prompts/system-prompt.md`
+
+**Métodos:**
+- `generateCode(String userPrompt)` - Gera código Java a partir de User Prompt
+
+**Configuração:**
+```properties
+spring.ai.openai.api-key=${AZURE_OPENAI_API_KEY}
+spring.ai.openai.base-url=https://gustavocontabeis-9085-resource.services.ai.azure.com/openai/v1
+```
+
+---
+
+### 4. **SddPlanServiceAgent**
 **Localização:** `com.example.springia.serviceagent.SddPlanServiceAgent`
 
 **Responsabilidade:** Valida e ajusta prompts de acordo com estrutura do repositório
@@ -330,62 +353,4 @@ curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.
 [AGENT] Gate de finalização acionado: validando build/test com Docker
 [AGENT] Execução concluída: SUCCESS - 6 passos
 ```
-
----
-
-## 🐛 Troubleshooting
-
-### Problema: "Tool não encontrada"
-
-**Causa:** Tool não foi registrada em `ToolRegistry`
-
-**Solução:**
-```java
-ToolRegistry registry = new ToolRegistry();
-registry.registerTool(new DiscoveryTool(...));
-```
-
-### Problema: "Resposta vazia do LLM"
-
-**Causa:** Prompt muito vago ou modelo saturado
-
-**Solução:** Adicione mais contexto ao prompt, reduza tamanho do input
-
-### Problema: "Docker build falha no Windows"
-
-**Causa:** Paths com `\` em vez de `/`
-
-**Solução:** Use `Path.normalize()` ou `FileUtils.normalizePath()`
-
-### Problema: "ChatClient não suporta Tools"
-
-**Causa:** Usando modelo que não suporta function calling
-
-**Solução:** Trocar para gpt-4o ou usar RestClient para Responses API
-
----
-
-## 📚 Referências
-
-- **Pattern ReAct:** Reasoning + Action loops para agentes de IA
-- **Spring AI Docs:** https://docs.spring.io/spring-ai/reference/
-- **Azure OpenAI:** https://learn.microsoft.com/en-us/azure/ai-services/openai/
-- **Tool Design:** Tool Registry pattern para permitir LLM usar ferramentas selecionadas
-
----
-
-## 🎓 Próximos Passos
-
-- [ ] Implementar validação estática com JavaParser
-- [ ] Adicionar suporte a multi-language (Go, Python, JS)
-- [ ] Criar advisor específico para Code Review
-- [ ] Integrar com plataforma de CI/CD (GitHub Actions)
-- [ ] Cachear resultados de Discovery para otimizar
-- [ ] Implementar Planning Agent para validação antes de gerar código
-
----
-
-**Última atualização:** 30/06/2026  
-**Versão:** 1.0  
-**Status:** Produção
 
