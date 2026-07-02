@@ -1,6 +1,7 @@
 package com.example.springia.controller;
 
 import com.example.springia.agent.CodeGeneratorAgent;
+import com.example.springia.agent.CodeGeneratorAzureSdkAgent;
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class ExecutorAgentController {
 
     private final CodeGeneratorAgent codeGeneratorAgent;
+    private final CodeGeneratorAzureSdkAgent codeGeneratorAzureSdkAgent;
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
     private final ProjectService projectService;
@@ -109,6 +111,34 @@ public class ExecutorAgentController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            log.error("[EXECUTE_2] Erro ao executar task", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("X");
+        }
+    }
+
+    /**
+     * curl -X GET http://localhost:8080/executor-agent/execute-azure-sdk -H "Content-Type: application/text"
+     * @return
+     */
+    @GetMapping("/execute-azure-sdk")
+    public ResponseEntity<String> executeAzureSdk() {
+        log.info("[EXECUTE_2] POST /execute-azure-sdk");
+
+        try {
+            String userPrompt = """
+                    Crie um Crud de Pessoa (id, nome, email) somente no Backend.
+                    Para isso gere:
+                    - Gere Classes de entidade JPA
+                    - Repository
+                    - Service
+                    - Endpoints REST.
+                    """;
+            codeGeneratorAzureSdkAgent.executar(userPrompt);;
+            return ResponseEntity.ok("{}");
+
+        } catch (Exception e) {
+            e.printStackTrace();
             log.error("[EXECUTE_2] Erro ao executar task", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("X");
