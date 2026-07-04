@@ -138,7 +138,7 @@ public class ExecutorAgentController {
         try {
 
             String userPrompt = """
-                    Crie um Crud de Pessoa (id, nome, email)
+                    Crie um Crud de Cliente (id, nome, email)
                     Para isso gere:
                     # Backend
                     - Gere Classes de entidade JPA
@@ -147,13 +147,26 @@ public class ExecutorAgentController {
                     - Endpoints REST.
                     # Frontend
                     - componente de telas de cadastro
-                    - rotas para a tela de cadastro
+                    - rotas para a tela de cadastro. Leia o conteúdo deste arquivo antes para adicionar a rota sem excluir as existentes.
                     - service
+                    Use as tools 'create_directory', 'create_file', 'read_file' ou 'update_file' para isso.
+                    Não solicite confirmação. Pode executar sem pedir confirmação.
+                    Apos gerar todos arquivos execute a tool 'docker_build_and_test' e verifique compilou com sucesso
+                    Execute novamente até a tool 'docker_build_and_test' retornar 'Passou!' senão corrija os erros e execute novamente.
+                    O ID do projeto atual é 1
                     """;
 
-            codeGeneratorOpenApiAgent.executar(userPrompt);
+//            String userPrompt = """
+//                    Execute a tool 'docker_build_and_test' e exiba o resultado.
+//                    O ID do projeto atual é 1;
+//                    """;
 
-            return ResponseEntity.ok("{}");
+            Project project = resolveProject(1L);
+            String resposta = codeGeneratorOpenApiAgent.executar(project, userPrompt);
+
+            log.info("[EXECUTE] POST /execute-code-generator-open-api-agent \n{}", resposta);
+
+            return ResponseEntity.ok("<pre>"+resposta+"</pre>");
 
         } catch (Exception e) {
             log.error("[EXECUTE_2] Erro ao executar task", e);

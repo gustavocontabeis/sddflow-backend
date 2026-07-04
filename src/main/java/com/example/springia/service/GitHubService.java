@@ -155,6 +155,8 @@ public class GitHubService {
             Path tempDir = Files.createTempDirectory(request.getRepo());
             log.debug("[GITHUB] Diretorio temporario criado path={}", tempDir);
 
+            String sufixoNumerico = tempDir.getFileName().toString().replaceAll("\\D+(\\d+)$", "$1");
+
             String cloneUrl = buildCloneUrl(request.getOwner(), request.getRepo());
             log.debug("[GITHUB] URL de clone montada url={}", cloneUrl.replaceAll("//[^@]+@", "//<token>@"));
 
@@ -180,7 +182,8 @@ public class GitHubService {
                     request.getRepo(),
                     request.getBranch() != null ? request.getBranch() : "default",
                     tempDir.toAbsolutePath().toString(),
-                    durationMs
+                    durationMs,
+                    sufixoNumerico
             );
 
         } catch (IOException | InterruptedException e) {

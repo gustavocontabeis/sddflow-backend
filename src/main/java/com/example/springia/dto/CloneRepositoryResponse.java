@@ -13,4 +13,5 @@ public class CloneRepositoryResponse {
     private String branch;
     private String clonedPath;
     private long durationMs;
+    private String sufixoNumerico;
 }

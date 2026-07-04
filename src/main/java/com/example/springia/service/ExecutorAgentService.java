@@ -38,6 +38,7 @@ public class ExecutorAgentService {
     private final GitHubService gitHubService;
     private final ProjectRepository projectRepository;
     private final CodeRepoRepository codeRepoRepository;
+    private final DockerBuildAndTestTool dockerBuildAndTestTool;
 
 
     /**
@@ -48,12 +49,14 @@ public class ExecutorAgentService {
     public ExecutorAgentService(ChatClient.Builder chatClientBuilder,
                                 GitHubService gitHubService,
                                 ProjectRepository projectRepository,
-                                CodeRepoRepository codeRepoRepository) {
+                                CodeRepoRepository codeRepoRepository,
+                                DockerBuildAndTestTool dockerBuildAndTestTool) {
         this.gitHubService = gitHubService;
         this.projectRepository = projectRepository;
         this.codeRepoRepository = codeRepoRepository;
         this.chatClient = chatClientBuilder.build();
         this.toolRegistry = new ToolRegistry();
+        this.dockerBuildAndTestTool = dockerBuildAndTestTool;
 
         // Sempre usa o diretório temporário do sistema operacional (raiz, por padrão).
         this.basePath = resolveBasePath(null);
@@ -87,7 +90,7 @@ public class ExecutorAgentService {
 
         // Registra o gate de validação de build/test com Docker se há projeto
         if (selectedProject != null) {
-            toolRegistry.registerTool(new DockerBuildAndTestTool(selectedProject));
+            toolRegistry.registerTool(dockerBuildAndTestTool);
             log.info("[EXECUTOR_AGENT] Tool de validação Docker registrada para projeto: {}", selectedProject.getName());
         }
     }

@@ -1,5 +1,6 @@
 package com.example.springia.service;
 
+import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
 import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
@@ -32,7 +33,8 @@ public class DiscoveryService {
     public static final Set<String> IGNORED_DIRECTORIES = Set.of(".git", "target", "node_modules", "dist");
     public static final Set<String> IGNORED_CONFIG_FILES = Set.of("package-lock.json");
 
-    private final ChatClient chatClient;
+    //private final ChatClient chatClient;
+    private final CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent;
     private final ObjectMapper objectMapper;
     private final ProjectRepository projectRepository;
     private final CodeRepoRepository codeRepoRepository;
@@ -40,15 +42,18 @@ public class DiscoveryService {
     public DiscoveryService(
             ChatClient.Builder chatClientBuilder,
             ProjectRepository projectRepository,
-            CodeRepoRepository codeRepoRepository
+            CodeRepoRepository codeRepoRepository,
+            CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent
     ) {
-        this.chatClient = chatClientBuilder.build();
+        //this.chatClient = chatClientBuilder.build();
         this.objectMapper = createObjectMapper();
         this.projectRepository = projectRepository;
         this.codeRepoRepository = codeRepoRepository;
+        this.codeGeneratorOpenApiAgent = codeGeneratorOpenApiAgent;
     }
 
     public String answerProjectQuestion(Long projectId, String question) {
+
         if (projectId == null) {
             throw new IllegalArgumentException("projectId e obrigatorio");
         }
@@ -118,10 +123,12 @@ public class DiscoveryService {
 
         log.info("[Perguntas]: {}\n", prompt);
 
-        String content = chatClient.prompt().tools(new DiscoveryTool(projectRepository, chatClient))
-                .user(prompt)
-                .call()
-                .content();
+        String content = codeGeneratorOpenApiAgent.executar(prompt);
+
+//        String content = chatClient.prompt().tools(new DiscoveryTool(projectRepository, chatClient))
+//                .user(prompt)
+//                .call()
+//                .content();
 
         return (content == null || content.isBlank())
                 ? "Nao foi possivel gerar uma resposta no momento."
@@ -287,10 +294,12 @@ public class DiscoveryService {
         log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
         log.info("PROMPT CONSTITUTION");
         log.info("{}", prompt);
-        String content = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String content = codeGeneratorOpenApiAgent.executar(prompt);
+
+//        String content = chatClient.prompt()
+//                .user(prompt)
+//                .call()
+//                .content();
 
         log.info("");
         log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
@@ -310,10 +319,11 @@ public class DiscoveryService {
                 %s
                 """, String.join("\n", conteudoArquivos));
 
-        String content = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String content = codeGeneratorOpenApiAgent.executar(prompt);
+//        String content = chatClient.prompt()
+//                .user(prompt)
+//                .call()
+//                .content();
 
         log.info("{}", content);
         return content;
@@ -332,10 +342,11 @@ public class DiscoveryService {
                 Não alucine.
                 """, modelo, String.join("\n", conteudoArquivosRegraNegocio), conteudoArquivosEndpointRest);
 
-        String content = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String content = codeGeneratorOpenApiAgent.executar(prompt);
+//        String content = chatClient.prompt()
+//                .user(prompt)
+//                .call()
+//                .content();
 
         log.info("{}", content);
         return content;
@@ -368,10 +379,12 @@ public class DiscoveryService {
                 %s
                 """, String.join("\n", conteudoArquivosConfiguracao));
 
-        String content = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String content = codeGeneratorOpenApiAgent.executar(prompt);
+
+//        String content = chatClient.prompt()
+//                .user(prompt)
+//                .call()
+//                .content();
 
         log.info("{}", content);
 
@@ -453,10 +466,11 @@ public class DiscoveryService {
                 %s
                 """, String.join("\n", files));
 
-        String content = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        String content = codeGeneratorOpenApiAgent.executar(prompt);
+//        String content = chatClient.prompt()
+//                .user(prompt)
+//                .call()
+//                .content();
 
         log.info("{}", content);
 

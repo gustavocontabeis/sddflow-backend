@@ -78,10 +78,18 @@ public class CodeRepoService {
 
             CloneRepositoryResponse cloneRepositoryResponse = gitHubService.cloneRepository(CloneRepositoryRequest.builder().owner(owner).repo(repo).branch(codeRepo.getBranch()).build());
 
-            DiscoveryRepoDTO dicovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
+            DiscoveryRepoDTO discovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
 
-            codeRepo.setStructure(dicovery.getStrutcture());
-            codeRepo.setExtensoesDeArquivosFonte(dicovery.getExtensoesDeArquivosFonte());
+            String strutcture = discovery.getStrutcture();
+
+            do {
+                strutcture = strutcture.replace(cloneRepositoryResponse.getSufixoNumerico(), "");
+            } while (strutcture.contains(cloneRepositoryResponse.getSufixoNumerico()));
+
+            log.info("strutcture: {}", strutcture);
+
+            codeRepo.setStructure(strutcture);
+            codeRepo.setExtensoesDeArquivosFonte(discovery.getExtensoesDeArquivosFonte());
 
             save(codeRepo);
             FileUtils.removeDir(Paths.get(cloneRepositoryResponse.getClonedPath()));

@@ -1,13 +1,18 @@
 package com.example.springia.agent.tool;
 
+import com.example.springia.agent.responseapi.request.RequestToolDefinition;
+import com.example.springia.agent.responseapi.request.RequestToolParameters;
+import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.dto.DockerBuildAndTestToolRepo;
 import com.example.springia.dto.DockerBuildAndTestToolReturn;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
+import com.example.springia.repository.ProjectRepository;
 import com.example.springia.utils.ProcessBuilderUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -36,15 +41,36 @@ import java.util.Map;
 public class DockerBuildAndTestTool implements Tool {
 
     private Project project;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
     private static final int MAX_LOG_LENGTH = 2000;
 
-    public DockerBuildAndTestTool() {
-        log.info("[CONSTRUCTOR] Inicializando ferramenta sem projeto vinculado");
-    }
-
-    public DockerBuildAndTestTool(Project project) {
-        log.info("[CONSTRUCTOR] Inicializando ferramenta com projeto {}", project != null ? project.getName() : "<null>");
-        this.project = project;
+    public static RequestToolDefinition createTool(){
+        return RequestToolDefinition.builder()
+                .type("function")
+                .name("docker_build_and_test")
+                .description("Compila e testa TODOS os repositórios do projeto usando Docker quando houver Dockerfile. " +
+                        "Para BACKEND e FRONTEND, usa o comando de compilação do repositório, com fallback por tipo. " +
+                        "CRÍTICO: Esta ferramenta deve ser usada ANTES de finalizar (Finalizar:) para validar o código gerado.")
+                .parameters(RequestToolParameters.builder()
+                        .type("object")
+                        .properties(Map.of(
+                                "validate_all_repos", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Se 'true', valida todos os repositórios. Se 'false', executa validação rápida no primeiro repo.")
+                                        .build(),
+                                "id_projeto", RequestToolProperty.builder()
+                                        .type("string")
+                                        .description("Numero do ID do projeto.")
+                                        .build()
+                        ))
+                        .required(List.of("validate_all_repos", "id_projeto"))
+                        .additionalProperties(false)
+                        .build())
+                .strict(true)
+                .build();
     }
 
     @Override
@@ -74,6 +100,17 @@ public class DockerBuildAndTestTool implements Tool {
 
         DockerBuildAndTestToolReturn ret = new DockerBuildAndTestToolReturn();
         ret.setBuilds(new ArrayList<>());
+
+        if(StringUtils.isNotBlank(params.get("id_projeto")) && projectRepository != null){
+            Long idProjeto = Long.parseLong(params.get("id_projeto"));
+            project = projectRepository.findById(idProjeto).orElse(null);
+            log.debug("[EXECUTE] Projeto carregado: {}", project != null ? project.getName() : "<não encontrado>");
+        }
+
+        if(project == null) {
+            log.error("[EXECUTE] Projeto não foi definido. Use projectRepository ou passe via construtor");
+            throw new IllegalStateException("Projeto não foi definido. Forneça projectRepository ou passe projeto via construtor");
+        }
 
         List<CodeRepo> repos = project.getRepos();
         StringBuilder results = new StringBuilder();
@@ -129,6 +166,9 @@ public class DockerBuildAndTestTool implements Tool {
 
     public String execute(Map<String, String> params) throws Exception {
         DockerBuildAndTestToolReturn dockerBuildAndTestToolReturn = execute2(params);
+        if(dockerBuildAndTestToolReturn.isAllSuccess()){
+            return "Passou!";
+        }
         return dockerBuildAndTestToolReturn.toString();
     }
 
@@ -341,6 +381,11 @@ public class DockerBuildAndTestTool implements Tool {
     public void setProjetc(Project projetc){
         log.info("[SET_PROJECT] Atualizando projeto para {}", projetc != null ? projetc.getName() : "<null>");
         this.project = projetc;
+    }
+
+    public void setProject(Project project){
+        log.info("[SET_PROJECT] Atualizando projeto para {}", project != null ? project.getName() : "<null>");
+        this.project = project;
     }
 }
 
