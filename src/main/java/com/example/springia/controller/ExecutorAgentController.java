@@ -1,6 +1,7 @@
 package com.example.springia.controller;
 
 import com.example.springia.agent.client.CodeGeneratorAzureSdkAgent;
+import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
 import com.example.springia.agent.client.CodeGeneratorResponseAPIAgent;
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
@@ -38,6 +39,7 @@ public class ExecutorAgentController {
 
     private final CodeGeneratorResponseAPIAgent codeGeneratorResponseAPIAgent;
     private final CodeGeneratorAzureSdkAgent codeGeneratorAzureSdkAgent;
+    private final CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent;
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
     private final ProjectService projectService;
@@ -114,6 +116,42 @@ public class ExecutorAgentController {
                     """;
 
             codeGeneratorResponseAPIAgent.generateCode(1L, userPrompt);
+
+            return ResponseEntity.ok("{}");
+
+        } catch (Exception e) {
+            log.error("[EXECUTE_2] Erro ao executar task", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("X");
+        }
+    }
+
+    /**
+     * http://localhost:8080/executor-agent/execute-code-generator-open-api-agent
+     * @return resposta textual do gerador de código
+     */
+    @GetMapping("/execute-code-generator-open-api-agent")
+    public ResponseEntity<String> executeCodeGeneratorOpenApiAgent() {
+
+        log.info("[EXECUTE] POST /execute-code-generator-open-api-agent");
+
+        try {
+
+            String userPrompt = """
+                    Crie um Crud de Pessoa (id, nome, email)
+                    Para isso gere:
+                    # Backend
+                    - Gere Classes de entidade JPA
+                    - Repository
+                    - Service
+                    - Endpoints REST.
+                    # Frontend
+                    - componente de telas de cadastro
+                    - rotas para a tela de cadastro
+                    - service
+                    """;
+
+            codeGeneratorOpenApiAgent.executar(userPrompt);
 
             return ResponseEntity.ok("{}");
 
