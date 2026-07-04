@@ -6,6 +6,8 @@ import com.example.springia.agent.responseapi.response.ResponseOutputItem;
 import com.example.springia.agent.responseapi.response.ResponsesApiResponse;
 import com.example.springia.agent.tool.DockerBuildAndTestTool;
 import com.example.springia.agent.tool.files.*;
+import com.example.springia.dto.DockerBuildAndTestToolRepo;
+import com.example.springia.dto.DockerBuildAndTestToolReturn;
 import com.example.springia.model.Project;
 import com.example.springia.repository.ProjectRepository;
 import com.example.springia.utils.JsonUtils;
@@ -37,6 +39,9 @@ public class CodeGeneratorResponseAPIAgent {
     CreateFileTool createFileTool;
 
     @Autowired
+    ReadFileTool readFileTool;
+
+    @Autowired
     DockerBuildAndTestTool dockerBuildAndTestTool;
 
     @Autowired
@@ -59,15 +64,21 @@ public class CodeGeneratorResponseAPIAgent {
 
         String systemPrompt = readResourceFile(SYSTEM_PROMPT_RESOURCE_PATH);
         ResponsesApiRequest responsesApiRequest = createDefaultRequest(systemPrompt, userPrompt);
-        String requestBody = JsonUtils.toJsonFormated(responsesApiRequest);
-
-        log.info("[GEN_CODE] REQUEST: file:{}", LogUtils.saveLog(requestBody, "request", "json"));
 
         try {
 
             String errorLog = "";
             int i = 0;
             do{
+                String text = responsesApiRequest.getInput().get(1).getContent().get(0).getText();
+
+                if(i > 0){
+                    text = text.concat("\n\n").concat("# Step "+i+"\n" + errorLog);
+                }
+
+                responsesApiRequest.getInput().get(1).getContent().get(0).setText(text);
+                String requestBody = JsonUtils.toJsonFormated(responsesApiRequest);
+                log.info("[GEN_CODE] REQUEST: file:{}", LogUtils.saveLog(requestBody, "request", "json"));
                 String response = restClient.post()
                         .uri(baseUrl + "/responses")
                         .body(requestBody)
@@ -103,6 +114,24 @@ public class CodeGeneratorResponseAPIAgent {
                             log.info("[GEN_CODE] Function Call: grep_files - Arguments: {}", responseOutputItem.getArguments());
                         } else if("read_file".equals(responseOutputItem.getName())) {
                             log.info("[GEN_CODE] Function Call: read_file - Arguments: {}", responseOutputItem.getArguments());
+                            String arguments = responseOutputItem.getArguments();
+                            String normalizedArguments = normalizeArguments(arguments);
+                            CreateFileToolParams obj = JsonUtils.toObject(normalizedArguments, CreateFileToolParams.class);
+                            String content = readFileTool.execute(Map.of(
+                                    "file_path", obj.getFilePath()
+                            ));
+                            log.info("[GEN_CODE] Function Call: read_file - Content: {}", content);
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("Conteúdo do arquivo: ");
+                            sb.append("\n");
+                            sb.append("``` ");
+                            sb.append(obj.getFilePath());
+                            sb.append("\n");
+                            sb.append(content);
+                            sb.append("\n");
+                            sb.append("```");
+                            sb.append("\n");
+                            errorLog += sb.toString();
                         } else {
                             log.info("[GEN_CODE] Function Call: {} - Arguments: {}", responseOutputItem.getName(), responseOutputItem.getArguments());
                         }
@@ -114,12 +143,32 @@ public class CodeGeneratorResponseAPIAgent {
 
                 dockerBuildAndTestTool.setProjetc(project);
 
-                String buildReturn = dockerBuildAndTestTool.execute(Map.of(
+                DockerBuildAndTestToolReturn buildReturn = dockerBuildAndTestTool.execute2(Map.of(
                         "dockerfile_path", "Dockerfile",
                         "context_path", "."
                 ));
 
-                 errorLog = buildReturn;
+                log.info("[GEN_CODE] BUILD - Sucesso?: {}", (buildReturn.isAllSuccess()?"SIM":"NAO"));
+
+                if(!buildReturn.isAllSuccess()){
+                    StringBuilder sb = new StringBuilder();
+                    List<DockerBuildAndTestToolRepo> builds = buildReturn.getBuilds();
+                    for (DockerBuildAndTestToolRepo build : builds) {
+                        if(!build.isSuccess()){
+                            sb.append("ERRO DE COMPILAÇÃO EM ");
+                            sb.append(build.getRepoName());
+                            sb.append("\n");
+                            sb.append("Faça a correção de acordo com o log abaixo.");
+                            sb.append("\n");
+                            sb.append("```");
+                            sb.append(build.getLogError());
+                            sb.append("```");
+                        }
+                    }
+                    errorLog += sb.toString();
+                } else {
+                    errorLog = "";
+                }
 
                 log.info("{} - {}", i++, buildReturn);
 

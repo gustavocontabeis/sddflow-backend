@@ -6,6 +6,8 @@ import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -16,6 +18,7 @@ import java.util.Map;
  * Ferramenta para ler arquivos do filesystem
  */
 @Slf4j
+@Component
 public class ReadFileTool implements Tool {
 
     @Override

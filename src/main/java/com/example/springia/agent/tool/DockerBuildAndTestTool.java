@@ -1,5 +1,7 @@
 package com.example.springia.agent.tool;
 
+import com.example.springia.dto.DockerBuildAndTestToolRepo;
+import com.example.springia.dto.DockerBuildAndTestToolReturn;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,14 +69,11 @@ public class DockerBuildAndTestTool implements Tool {
         return params;
     }
 
-    @Override
-    public String execute(Map<String, String> params) throws Exception {
+    public DockerBuildAndTestToolReturn execute2(Map<String, String> params) throws Exception {
         log.info("[EXECUTE] Iniciando execução com parâmetros: {}", params);
 
-        if (project == null || project.getRepos() == null || project.getRepos().isEmpty()) {
-            log.warn("[EXECUTE] ERRO: Nenhum repositório configurado no projeto para validação.");
-            return "ERRO: Nenhum repositório configurado no projeto para validação.";
-        }
+        DockerBuildAndTestToolReturn ret = new DockerBuildAndTestToolReturn();
+        ret.setBuilds(new ArrayList<>());
 
         List<CodeRepo> repos = project.getRepos();
         StringBuilder results = new StringBuilder();
@@ -88,15 +88,17 @@ public class DockerBuildAndTestTool implements Tool {
             results.append("\n--- Repositório: ").append(repo.getName()).append(" (Tipo: ").append(repo.getType()).append(") ---\n");
 
             try {
-                String buildResult = buildAndTestRepository(repo);
+                String buildResult = "";
+                DockerBuildAndTestToolRepo retRepo = buildAndTestRepository(repo);
+                ret.getBuilds().add(retRepo);
                 results.append(buildResult).append("\n");
 
-                if (buildResult.contains("ERRO")) {
+                if (!retRepo.isSuccess()) {
                     failureCount++;
                     allSuccess = false;
                     results.append("  Status: ❌ FALHOU\n");
                     log.trace("[EXECUTE]   Status: ❌ FALHOU");
-                } else if (buildResult.contains("SUCESSO")) {
+                } else {
                     successCount++;
                     results.append("  Status: ✅ PASSOU\n");
                     log.trace("[EXECUTE]   Status: ✅ PASSOU");
@@ -122,21 +124,28 @@ public class DockerBuildAndTestTool implements Tool {
             results.append("\nCorreja os erros acima antes de finalizar.");
         }
 
-        return results.toString();
+        return ret;
+    }
+
+    public String execute(Map<String, String> params) throws Exception {
+        DockerBuildAndTestToolReturn dockerBuildAndTestToolReturn = execute2(params);
+        return dockerBuildAndTestToolReturn.toString();
     }
 
     /**
      * Compila e testa um repositório específico usando Docker
      */
-    private String buildAndTestRepository(CodeRepo repo) {
+    private DockerBuildAndTestToolRepo buildAndTestRepository(CodeRepo repo) {
         log.debug("[BUILD_TEST_REPO] Iniciando validação para repo: {} (tipo: {})", repo.getName(), repo.getType());
 
+        DockerBuildAndTestToolRepo ret = new DockerBuildAndTestToolRepo();
+        ret.setRepoName(repo.getName());
         StringBuilder output = new StringBuilder();
         output.append("Validando repo: ").append(repo.getName()).append("\n");
 
         File repoDir = new File(repo.getPath());
         if (!repoDir.isDirectory()) {
-            return "ERRO: Caminho do repositório inválido ou inexistente: " + repo.getPath();
+            throw new RuntimeException("ERRO: Caminho do repositório inválido ou inexistente: " + repo.getPath());
         }
 
         String buildCommand = resolveBuildCommand(repo);
@@ -144,9 +153,13 @@ public class DockerBuildAndTestTool implements Tool {
             String[] command = {"bash", "-c", buildCommand};
             ProcessBuilderReturnDTO execute = ProcessBuilderUtils.execute(repo.getPath(), command);
             if(execute.isOk()){
-               return "SUCESSO: Build e Teste concluídos com sucesso para o repositório: " + repo.getName();
+                ret.setSuccess(true);
+                ret.setLog(execute.getOutput());
+                return ret;
             }else{
-                return "ERRO: " + execute.getOutput();
+                ret.setSuccess(false);
+                ret.setLogError(execute.getOutput());
+                return ret;
             }
         }
 
@@ -160,7 +173,9 @@ public class DockerBuildAndTestTool implements Tool {
                     output.append("✓ Docker Build SUCESSO (exit code: 0)\n");
                     log.trace("[BUILD_TEST_REPO] ✓ Docker Build SUCESSO (exit code: 0)");
                     appendTailLines(output, dockerResult.output, 5);
-                    return output.toString();
+                    ret.setSuccess(true);
+                    ret.setLog(output.toString());
+                    return ret;
                 }
 
                 output.append("ERRO: Build falhou (exit code: ").append(dockerResult.exitCode).append(")\n");
@@ -168,8 +183,9 @@ public class DockerBuildAndTestTool implements Tool {
                 output.append("Log do erro:\n");
                 appendTrimmedLog(output, dockerResult.output);
                 log.trace("[BUILD_TEST_REPO]  Log do erro: {}:", dockerResult.output);
-
-                return output.toString();
+                ret.setSuccess(false);
+                ret.setLogError(output.toString());
+                return ret;
             }
 
             if (hasDockerfile) {
@@ -181,7 +197,9 @@ public class DockerBuildAndTestTool implements Tool {
                 output.append("✓ Build + Test SUCESSO (exit code: 0)\n");
                 log.trace("[BUILD_TEST_REPO]  ✓ Build + Test SUCESSO (exit code: 0)");
                 appendTailLines(output, localResult.output, 5);
-                return output.toString();
+                ret.setSuccess(true);
+                ret.setLog(output.toString());
+                return ret;
             }
 
             output.append("ERRO: Build falhou (exit code: ").append(localResult.exitCode).append(")\n");
@@ -191,12 +209,16 @@ public class DockerBuildAndTestTool implements Tool {
             log.trace("[BUILD_TEST_REPO]  Log do erro: {}:", localResult.output);
 
             appendTrimmedLog(output, localResult.output);
-            return output.toString();
+            //ret.setSuccess(true);
+            //ret.setLog(output.toString());
+            return ret;
 
         } catch (Exception e) {
             output.append("ERRO ao executar build: ").append(e.getMessage()).append("\n");
             log.error("[BUILD_TEST_REPO] ERRO ao executar build: {}", e.getMessage());
-            return output.toString();
+            ret.setSuccess(false);
+            ret.setLogError(output.toString());
+            return ret;
         }
     }
 

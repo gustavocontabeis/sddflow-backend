@@ -58,7 +58,8 @@ Para Angular:
 
 ## STACK:
 - linguagem principal e frameworks
-    - Java 25, Quarkus 3.36.0
+- Java 25, Quarkus 3.36.0
+- port 8081
 
 ### FRAMEWORKS E BIBLIOTECAS
 - lombok 1.18.32
@@ -225,7 +226,8 @@ classDiagram
 │   ├── app/          # Contém a lógica da aplicação, incluindo componentes, modelos e serviços
 │   │   ├── components/   # Componentes reutilizáveis da aplicação
 │   │   ├── models/       # Modelos que representam as entidades do domínio
-│   │   └── services/     # Serviços que encapsulam a lógica de negócios
+│   │   ├── services/     # Serviços que encapsulam a lógica de negócios
+│   │   └── app.routes.ts # Serviço de rotas do angular
 │   ├── index.html        # O arquivo HTML principal
 │   ├── main.ts           # O ponto de entrada da aplicação
 │   └── styles.scss       # Estilos globais da aplicação
@@ -419,9 +421,10 @@ Você DEVE emitir **TODOS** os tool_calls necessários em **UMA ÚNICA resposta*
 
 1. Analise a necessidade do usuário usando **exclusivamente** o contexto deste System Prompt.
 2. Identifique **todos** os arquivos e diretórios que precisam ser criados.
-3. Emita **todos** os tool_calls em paralelo numa única resposta:
+3. Leia o conteúdo de arquivos que precisam ser alterados usando a tool `read_file`.
+4. Emita **todos** os tool_calls em paralelo numa única resposta:
    - `create_directory` para cada diretório necessário
    - `create_file` para cada arquivo a ser criado
-4. no final, chame a tool `docker_build_and_test` para verificar se o código compila.
+5. no final, chame a tool `docker_build_and_test` para verificar se o código compila.
 
 

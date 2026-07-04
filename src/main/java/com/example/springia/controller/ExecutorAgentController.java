@@ -89,7 +89,7 @@ public class ExecutorAgentController {
     }
 
     /**
-     * http://localhost:8080/executor-agent/execute-response-api-agent
+     * http://localhost:8080/executor-agent/execute-responses-api-agent
      * @return resposta textual do gerador de código
      */
     @GetMapping("/execute-responses-api-agent")
@@ -99,15 +99,18 @@ public class ExecutorAgentController {
 
         try {
 
-            resolveProject(1L);
-
             String userPrompt = """
-                    Crie um Crud de Pessoa (id, nome, email) somente no Backend.
+                    Crie um Crud de Pessoa (id, nome, email)
                     Para isso gere:
+                    # Backend
                     - Gere Classes de entidade JPA
                     - Repository
                     - Service
                     - Endpoints REST.
+                    # Frontend
+                    - componente de telas de cadastro
+                    - rotas para a tela de cadastro
+                    - service
                     """;
 
             codeGeneratorResponseAPIAgent.generateCode(1L, userPrompt);

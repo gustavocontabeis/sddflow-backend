@@ -54,11 +54,7 @@ public class CreateFileTool implements Tool {
         String fullPath = filePath;
         var path = Paths.get(FileUtils.fixPath(fullPath));
 
-        if (Files.exists(path)) {
-            throw new IllegalArgumentException(
-                    "Arquivo já existe: " + path + ". Use a tool update_file para alterar apenas as linhas necessárias."
-            );
-        }
+        Files.deleteIfExists(path);
 
         // Cria diretórios pais se não existirem
         Files.createDirectories(path.getParent());
