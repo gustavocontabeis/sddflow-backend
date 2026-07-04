@@ -138,6 +138,13 @@ Para Angular:
         - `nome`: String
         - `email`: String
 
+6. **Classe: `Pessoa`**
+    - **Descrição:** Representa uma pessoa no sistema.
+    - **Atributos:**
+        - `id`: Long
+        - `nome`: String
+        - `email`: String
+
 ### DIAGRAMA DE CLASSES EM MERMAID
 ```mermaid
 classDiagram
@@ -174,6 +181,12 @@ classDiagram
         +String descricao
     }
 
+    class Pessoa {
+        +Long id
+        +String nome
+        +String email
+    }
+
     Usuario --o ComentarioTarefa : faz
     Tarefa --o ComentarioTarefa : possui
     Usuario --o HistoricoStatusTarefa : altera
@@ -202,6 +215,10 @@ classDiagram
 10. **Listar Último Histórico por Tarefa**
 11. **Criar Usuário**
 12. **Listar Usuários**
+13. **Criar Pessoa**
+14. **Editar Pessoa**
+15. **Excluir Pessoa**
+16. **Listar Pessoas**
 
 # FRONTEND
 
@@ -304,6 +321,11 @@ classDiagram
     - **email** (string): Email do usuário.
     - **tarefas** (number[], opcional): Lista de identificadores de tarefas atribuídas ao usuário.
 
+11. **Usuario**
+    - **id** (number): Identificador único da pessoa.
+    - **nome** (string): Nome do pessoa.
+    - **email** (string): Email da pessoa.
+
 ### DIAGRAMA DE CLASSES EM MERMAID
 ```mermaid
 classDiagram
@@ -379,6 +401,12 @@ classDiagram
         +string nome
         +string email
         +number[]? tarefas
+    }
+
+    class Pessoa {
+        +number id
+        +string nome
+        +string email
     }
 
     TarefaComStatus --> TarefaDetalhe

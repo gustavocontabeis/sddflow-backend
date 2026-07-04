@@ -97,10 +97,9 @@ public class ProcessBuilderUtils {
 
         String[] split = environment.get("PATH").split(":");
         for (String s : split) {
-            log.info("{}", s);
+            log.debug("{}", s);
         }
 
-        //applyNodeEnvironment(environment);
     }
 
     private static void applyNodeEnvironment(Map<String, String> environment) {
