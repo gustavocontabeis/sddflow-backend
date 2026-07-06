@@ -1,5 +1,6 @@
 package com.example.springia.service;
 
+import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
 import com.example.springia.model.*;
 import com.example.springia.model.enums.MessageRole;
 import com.example.springia.repository.ConversationRepository;
@@ -23,20 +24,20 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ProjectRepository projetctRepository;
     private final ConversationRepository conversationRepository;
-    private final ChatClient chatClient;
+    private final CodeGeneratorOpenApiAgent chatClient;
     private final DiscoveryService discoveryService;
 
     public MessageService(
             MessageRepository messageRepository,
             ProjectRepository projetctRepository,
             ConversationRepository conversationRepository,
-            ChatClient.Builder chatClientBuilder,
+            CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent,
             DiscoveryService discoveryService
     ) {
         this.messageRepository = messageRepository;
         this.projetctRepository = projetctRepository;
         this.conversationRepository = conversationRepository;
-        this.chatClient = chatClientBuilder.build();
+        this.chatClient = codeGeneratorOpenApiAgent;
         this.discoveryService = discoveryService;
     }
 
@@ -55,11 +56,10 @@ public class MessageService {
         String prompt = buildPrompt(message.getConversationSession(), history, message.getContent());
         log.info("[MESSAGE_SERVICE] - prompt construido: {} ", prompt);
 
-        String response = chatClient.prompt()
-                .system("Você é um especialista sênior em engenharia de requisitos.")
-                .user(prompt)
-                .call()
-                .content();
+        String s = """
+                Você é um especialista sênior em engenharia de requisitos.
+                """;
+        String response = chatClient.executar(" "+ prompt);
 
         Message assistant = saveMessage(message.getConversationSession(), MessageRole.ASSISTANT, response);
 
