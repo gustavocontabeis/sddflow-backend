@@ -34,9 +34,9 @@ public class DiscoveryController {
      * {@code curl -X GET "http://localhost:8080/discovery?repositoryPath=/home/user/projeto"}
      */
     //@GetMapping
-    public String discovery(@RequestParam String repositoryPath) {
+    public String discovery(@RequestParam Long idRepo, @RequestParam String repositoryPath) {
         log.info("[API] GET /discovery");
-        DiscoveryRepoDTO dicovery = discoveryService.dicovery(Path.of(repositoryPath));
+        DiscoveryRepoDTO dicovery = discoveryService.dicovery(idRepo, Path.of(repositoryPath));
         return JsonUtils.toJson(dicovery);
     }
 

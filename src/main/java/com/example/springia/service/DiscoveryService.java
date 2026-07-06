@@ -1,7 +1,6 @@
 package com.example.springia.service;
 
 import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
-import com.example.springia.agent.tool.discovery.DiscoveryTool;
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
 import com.example.springia.dto.DiscoveryRepoDTO;
@@ -141,8 +140,9 @@ public class DiscoveryService {
                 .build();
     }
 
-    public DiscoveryRepoDTO dicovery(Path path){
+    public DiscoveryRepoDTO dicovery(Long idRepo, Path path){
 
+        CodeRepo codeRepo = codeRepoRepository.findById(idRepo).get();
         List<String> strings = FileUtils.listFilesNames(path);
 
         if(!strings.isEmpty()){
@@ -233,7 +233,7 @@ public class DiscoveryService {
         dto.setDescricaoEstruturaDiretorios(discoveryDirs.getDescricaoEstruturaDiretorios());
         dto.setModelo(modeloJson);
 
-        dto.setStrutcture(createContitution(
+        dto.setStrutcture(createContitution(codeRepo,
                 configuracoes,
                 discoveryDirs.getDescricaoEstruturaDiretorios(),
                 modeloJson,
@@ -243,7 +243,7 @@ public class DiscoveryService {
         
     }
 
-    private String createContitution(DiscoveryDTO configuracoes, String descricaoEstruturaDiretorios, String descricaoModelo, String regrasNegocio) {
+    private String createContitution(CodeRepo codeRepo, DiscoveryDTO configuracoes, String descricaoEstruturaDiretorios, String descricaoModelo, String regrasNegocio) {
 
         String linguagem = configuracoes.linguagem();
         String frameworksBibliotecas = String.join(", ", configuracoes.frameworksBibliotecas());
@@ -256,31 +256,40 @@ public class DiscoveryService {
                 [%s].
                 Essas são os frameworks e bibliotecas utilizadas no sistema.
                 [%s]
-                Esse é o conteúdo refetente a descrição da estrutura de diretórios.
+                Esse é o conteúdo referente a descrição da estrutura de diretórios.
                 [%s]
-                Esse é o conteúdo refetente a conexoes com banco de dados.
+                Esse é o conteúdo referente a conexoes com banco de dados.
                 [%s]
-                Esse é o conteúdo refetente a integrações com outros sistemas.
+                Esse é o conteúdo referente a integrações com outros sistemas.
                 [%s]
-                Esse é o conteúdo refetente descrição dos modelos e relacionamentos do sistema.
+                Esse é o conteúdo referente descrição dos modelos e relacionamentos do sistema.
                 [%s]
-                Esse é o conteúdo refetente regras de negócio do sistema.
+                Esse é o conteúdo referente regras de negócio do sistema.
                 [%s]
                 Crie o conteudo de um documento contituition.md contendo os seguintes tópicos:
-                # CONSTITUTION
-                # STACK: 
+                # REPOSITÓRIO
+                Nome: %s
+                Tipo: %s
+                Local: %s
+                ## CONSTITUTION
+                ## STACK: 
                  - linguagem principal e frameworks
-                ### FRAMEWORKS E BIBLIOTECAS
+                #### FRAMEWORKS E BIBLIOTECAS
                   - listar os frameworks e bibliotecas e versões
-                # ESTRUTURA DE DIRETÓRIOS
-                  - mostrar estrutura de diretórios e detalhamento
-                # CONEXOES COM BANDO DE DADOS
-                  - detahlar conexões com banco de dados
-                # INTEGRAÇÕES COM OUTROS SITEMAS
-                # CLASSES E ATRIBUTOS
-                ### DIAGRAMA DE CLASSES EM MERMAID
-                ### DESCRIÇÃO DO DIAGRAMA
-                # REGRAS DE NEGÓCIO
+                ## ESTRUTURA DE DIRETÓRIOS
+                  - Gere a estrutura de diretórios de um projeto no formato de árvore (tree), seguindo exatamente estas regras:
+                    - Use caracteres ASCII para árvore: ├──, │, └──
+                    - Indente corretamente com espaços
+                    - Inclua comentários à direita usando #
+                    - Não use markdown adicional fora do bloco
+                    - Estrutura deve começar pela raiz do projeto
+                ## CONEXOES COM BANDO DE DADOS
+                  - detalhar conexões com banco de dados
+                ## INTEGRAÇÕES COM OUTROS SITEMAS
+                ## CLASSES E ATRIBUTOS
+                #### DIAGRAMA DE CLASSES EM MERMAID
+                ##### DESCRIÇÃO DO DIAGRAMA
+                ## REGRAS DE NEGÓCIO
                 IMPORTANTE: retorne somente o conteúdo do documento sem outros comentários.
                 """, linguagem,
                 frameworksBibliotecas,
@@ -288,7 +297,7 @@ public class DiscoveryService {
                 conexoesComBancoDeDados,
                 integracoesComOutrosSistemas,
                 descricaoModelo,
-                regrasNegocio);
+                regrasNegocio, codeRepo.getName(), codeRepo.getType(), codeRepo.getPath());
 
         log.info("");
         log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
@@ -543,6 +552,5 @@ public class DiscoveryService {
         }
         return true;
     }
-
 
 }

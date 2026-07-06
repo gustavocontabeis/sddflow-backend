@@ -78,7 +78,7 @@ public class CodeRepoService {
 
             CloneRepositoryResponse cloneRepositoryResponse = gitHubService.cloneRepository(CloneRepositoryRequest.builder().owner(owner).repo(repo).branch(codeRepo.getBranch()).build());
 
-            DiscoveryRepoDTO discovery = discoveryService.dicovery(Path.of(cloneRepositoryResponse.getClonedPath()));
+            DiscoveryRepoDTO discovery = discoveryService.dicovery(id, Path.of(cloneRepositoryResponse.getClonedPath()));
 
             String strutcture = discovery.getStrutcture();
 
