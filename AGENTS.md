@@ -85,7 +85,7 @@ spring.ai.openai.base-url=https://gustavocontabeis-9085-resource.services.ai.azu
 ---
 
 ### 3. **CodeGeneratorOpenApiAgent**
-**Localização:** `com.example.springia.agent.client.CodeGeneratorOpenApiAgent`
+**Localização:** `com.example.springia.agent.client.CodeGeneratorOpenAiAgent`
 
 **Responsabilidade:** Gera código Java usando modelo gpt-5.3-codex com Responses API usando `com.openai.client.OpenAIClient` 
 

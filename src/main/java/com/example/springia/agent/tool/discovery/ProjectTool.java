@@ -4,9 +4,8 @@ import com.example.springia.agent.responseapi.request.RequestToolDefinition;
 import com.example.springia.agent.responseapi.request.RequestToolParameters;
 import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
-import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
-import com.example.springia.repository.ProjectRepository;
+import com.example.springia.service.ProjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -18,29 +17,33 @@ import java.util.Map;
  * Ferramenta que gera um system prompt com os dados do projeto e seus repositórios
  * em formato adequado para a OpenAI Responses API.
  * <p>{@code curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.tool.discovery.ProjectTool" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'}</p>
+ * <p>{@code logging.level.com.example.springia.agent.tool.discovery.ProjectTool=DEBUG}</p>
  */
 @Slf4j
 @Component
 public class ProjectTool implements Tool {
 
-    private final ProjectRepository projectRepository;
+    private final ProjectService projectService;
 
-    public ProjectTool(ProjectRepository projectRepository) {
-        this.projectRepository = projectRepository;
+    public ProjectTool(ProjectService projectService) {
+        this.projectService = projectService;
     }
 
     @Override
     public String getName() {
+        log.info("[GET_NAME] Retornando nome da ferramenta");
         return "project_tool";
     }
 
     @Override
     public String getDescription() {
+        log.info("[GET_DESCRIPTION] Retornando descrição da ferramenta");
         return "Retorna um system prompt com os dados do projeto, incluindo constitution do projeto e dos repositórios, usando estrutura compatível com a OpenAI Responses API";
     }
 
     @Override
     public Map<String, String> getParameters() {
+        log.info("[GET_PARAMETERS] Retornando parâmetros da ferramenta");
         Map<String, String> params = new HashMap<>();
         params.put("project_id", "ID do projeto a ser carregado - OBRIGATORIO");
         return params;
@@ -53,8 +56,7 @@ public class ProjectTool implements Tool {
         String projectIdRaw = params.get("project_id");
         Long projectId = parseProjectId(projectIdRaw);
 
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado: " + projectId));
+        Project project = projectService.findById(projectId);
 
         return buildSystemPrompt(project);
     }
@@ -66,7 +68,7 @@ public class ProjectTool implements Tool {
     public String projectTool(
             @org.springframework.ai.tool.annotation.ToolParam(description = "ID do projeto") Long projectId
     ) {
-        log.info("[PROJECT_TOOL] Iniciando execução da projectTool");
+        log.info("[PROJECT_TOOL] Iniciando execução da projectTool. projectId={}", projectId);
 
         Map<String, String> params = new HashMap<>();
         params.put("project_id", projectId == null ? "" : String.valueOf(projectId));
@@ -77,16 +79,17 @@ public class ProjectTool implements Tool {
         log.info("[GET_SYS_PROMPT] Iniciando geração do system prompt");
 
         if (id == null) {
+            log.warn("[GET_SYS_PROMPT] id do projeto não informado");
             throw new IllegalArgumentException("O id do projeto é obrigatório");
         }
 
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado: " + id));
+        Project project = projectService.findById(id);
 
         return buildSystemPrompt(project);
     }
 
     public static RequestToolDefinition createTool() {
+        log.info("[CREATE_TOOL] Criando definição da ferramenta project_tool");
         return RequestToolDefinition.builder()
                 .type("function")
                 .name("project_tool")
@@ -110,6 +113,7 @@ public class ProjectTool implements Tool {
         log.debug("[PARSE_PROJECT_ID] Convertendo project_id");
 
         if (projectIdRaw == null || projectIdRaw.isBlank()) {
+            log.warn("[PARSE_PROJECT_ID] project_id não informado");
             throw new IllegalArgumentException("O parâmetro 'project_id' é obrigatório");
         }
 
@@ -117,6 +121,7 @@ public class ProjectTool implements Tool {
             return Long.valueOf(projectIdRaw.trim());
         } catch (NumberFormatException e) {
             log.error("[PARSE_PROJECT_ID] Erro ao converter project_id", e);
+            log.warn("[PARSE_PROJECT_ID] project_id inválido: {}", projectIdRaw);
             throw new IllegalArgumentException("O parâmetro 'project_id' deve ser numérico: " + projectIdRaw, e);
         }
     }
@@ -136,39 +141,7 @@ public class ProjectTool implements Tool {
                 """);
 
         sb.append("\n");
-        sb.append("- id: ").append(project.getId()).append("\n");
-        sb.append("- sigla: ").append(safe(project.getSigla())).append("\n");
-        sb.append("- nome: ").append(safe(project.getName())).append("\n");
-        sb.append("- constitution:\n");
-        sb.append(safeBlock(project.getConstitution())).append("\n");
-
-        List<CodeRepo> repos = project.getRepos();
-        if (repos == null || repos.isEmpty()) {
-            sb.append("\n## Repositórios\n");
-            sb.append("[nenhum repositório configurado]\n");
-            return sb.toString().trim();
-        }
-
-        sb.append("\n## Repositórios\n");
-
-        for (CodeRepo repo : repos) {
-            log.trace("[BUILD_SYS_PROMPT] Processando repositório {}", repo.getName());
-
-            sb.append("\n### Repositório\n");
-            sb.append("- id: ").append(repo.getId()).append("\n");
-            sb.append("- nome: ").append(safe(repo.getName())).append("\n");
-            sb.append("- path: ").append(safe(repo.getPath())).append("\n");
-            sb.append("- url: ").append(safe(repo.getUrl())).append("\n");
-            sb.append("- branch: ").append(safe(repo.getBranch())).append("\n");
-            sb.append("- tipo: ").append(repo.getType() != null ? repo.getType().name() : "[vazio]").append("\n");
-            sb.append("- extensoesDeArquivosFonte: ").append(safe(repo.getExtensoesDeArquivosFonte())).append("\n");
-            sb.append("- comandoCompilacao: ").append(safe(repo.getComandoCompilacao())).append("\n");
-            sb.append("- constitution:\n");
-            sb.append(safeBlock(repo.getConstitution())).append("\n");
-            sb.append("- structure:\n");
-            sb.append(safeBlock(repo.getStructure())).append("\n");
-        }
-
+        sb.append(projectService.getConstitution(project));
         sb.append("""
                 
                 ## Regras de uso
@@ -181,17 +154,4 @@ public class ProjectTool implements Tool {
         return sb.toString().trim();
     }
 
-    private String safe(String value) {
-        if (value == null || value.isBlank()) {
-            return "[vazio]";
-        }
-        return value;
-    }
-
-    private String safeBlock(String value) {
-        if (value == null || value.isBlank()) {
-            return "[vazio]";
-        }
-        return value.strip();
-    }
 }

@@ -1,6 +1,6 @@
 package com.example.springia.service;
 
-import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
+import com.example.springia.agent.client.CodeGeneratorOpenAiAgent;
 import com.example.springia.dto.DiscoveryDTO;
 import com.example.springia.dto.DiscoveryDirsDTO;
 import com.example.springia.dto.DiscoveryRepoDTO;
@@ -33,7 +33,7 @@ public class DiscoveryService {
     public static final Set<String> IGNORED_CONFIG_FILES = Set.of("package-lock.json");
 
     //private final ChatClient chatClient;
-    private final CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent;
+    private final CodeGeneratorOpenAiAgent codeGeneratorOpenApiAgent;
     private final ObjectMapper objectMapper;
     private final ProjectRepository projectRepository;
     private final CodeRepoRepository codeRepoRepository;
@@ -42,7 +42,7 @@ public class DiscoveryService {
             ChatClient.Builder chatClientBuilder,
             ProjectRepository projectRepository,
             CodeRepoRepository codeRepoRepository,
-            CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent
+            CodeGeneratorOpenAiAgent codeGeneratorOpenApiAgent
     ) {
         //this.chatClient = chatClientBuilder.build();
         this.objectMapper = createObjectMapper();

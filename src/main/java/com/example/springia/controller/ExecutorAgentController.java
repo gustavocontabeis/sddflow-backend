@@ -1,7 +1,7 @@
 package com.example.springia.controller;
 
 import com.example.springia.agent.client.CodeGeneratorAzureSdkAgent;
-import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
+import com.example.springia.agent.client.CodeGeneratorOpenAiAgent;
 import com.example.springia.agent.client.CodeGeneratorResponseAPIAgent;
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
@@ -39,7 +39,7 @@ public class ExecutorAgentController {
 
     private final CodeGeneratorResponseAPIAgent codeGeneratorResponseAPIAgent;
     private final CodeGeneratorAzureSdkAgent codeGeneratorAzureSdkAgent;
-    private final CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent;
+    private final CodeGeneratorOpenAiAgent codeGeneratorOpenAiAgent;
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
     private final ProjectService projectService;
@@ -162,7 +162,7 @@ public class ExecutorAgentController {
 //                    """;
 
             Project project = resolveProject(1L);
-            String resposta = codeGeneratorOpenApiAgent.executar(project, userPrompt);
+            String resposta = codeGeneratorOpenAiAgent.executar(project, userPrompt);
 
             log.info("[EXECUTE] POST /execute-code-generator-open-api-agent \n{}", resposta);
 

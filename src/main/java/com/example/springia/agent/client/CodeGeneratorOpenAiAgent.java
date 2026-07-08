@@ -7,6 +7,9 @@ import com.example.springia.agent.tool.Tool;
 import com.example.springia.agent.tool.files.*;
 import com.example.springia.model.Project;
 import com.example.springia.repository.ProjectRepository;
+import com.example.springia.service.ProjectService;
+import com.example.springia.utils.LogUtils;
+import com.example.springia.utils.OpenAIUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
@@ -14,6 +17,7 @@ import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.core.JsonValue;
 import com.openai.models.responses.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,19 +30,19 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class CodeGeneratorOpenApiAgent {
+public class CodeGeneratorOpenAiAgent {
 
     private static final String SYSTEM_PROMPT_RESOURCE_PATH = "prompts/system-prompt.md";
-    private static final int MAX_TOOL_LOOPS = 10;
+    private static final int MAX_TOOL_LOOPS = 30;
 
     private final ObjectMapper objectMapper;
-    private final ProjectRepository projectRepository;
+    private final ProjectService projectService;
     private final DockerBuildAndTestTool dockerBuildAndTestTool;
     private final Map<String, Tool> supportedTools;
 
-    public CodeGeneratorOpenApiAgent(ObjectMapper objectMapper, ProjectRepository projectRepository, DockerBuildAndTestTool dockerBuildAndTestTool) {
+    public CodeGeneratorOpenAiAgent(ObjectMapper objectMapper, ProjectService projectService, DockerBuildAndTestTool dockerBuildAndTestTool) {
         this.objectMapper = objectMapper;
-        this.projectRepository = projectRepository;
+        this.projectService = projectService;
         this.supportedTools = new HashMap<>();
         CreateFileTool createFileTool = new CreateFileTool();
         this.supportedTools.put(createFileTool.getName(), createFileTool);
@@ -56,6 +60,15 @@ public class CodeGeneratorOpenApiAgent {
         this.supportedTools.put(dockerBuildAndTestTool.getName(), dockerBuildAndTestTool);
     }
 
+    /**
+     * <pre>
+     * <b>System Prompt?</b> Não
+     * <b>Tools?</b> Não
+     * <b>Testa Build?</b> Não
+     * </pre>
+     * @param userPrompt
+     * @return
+     */
     public String executar(String userPrompt) {
         OpenAIClient client = getOpenAIClient();
         String deploymentName = System.getenv().getOrDefault("AZURE_OPENAI_DEPLOYMENT", "gpt-5.3-codex").trim();
@@ -65,24 +78,19 @@ public class CodeGeneratorOpenApiAgent {
                 .toolChoice(ToolChoiceOptions.NONE);
         ResponseCreateParams createParams = createParamsBuilder.build();
         Response response = client.responses().create(createParams);
-        for (ResponseOutputItem responseOutputItem : response.output()) {
-        Optional<ResponseOutputMessage> responseOutputMessageOptional = responseOutputItem.message();
-            if(responseOutputMessageOptional.isPresent()) {
-                ResponseOutputMessage responseOutputMessage = responseOutputMessageOptional.get();
-                List<ResponseOutputMessage.Content> contentList = responseOutputMessage.content();
-                for (ResponseOutputMessage.Content content : contentList) {
-                    Optional<ResponseOutputText> responseOutputTextOptional = content.outputText();
-                    if(responseOutputTextOptional.isPresent()) {
-                        ResponseOutputText responseOutputText = responseOutputTextOptional.get();
-                        String text = responseOutputText.text();
-                        return  text;
-                    }
-                }
-            }
-        }
-        return "";
+        return OpenAIUtils.extrairResposta(response);
     }
 
+    /**
+     * <pre>
+     * <b>System Prompt?</b> Sim. lê do resource.
+     * <b>Tools?</b> CreateFileTool, CreateDirectoryTool, FindFilesTool, GrepFilesTool, ReadFileTool, UpdateFileTool, DockerBuildAndTestTool
+     * <b>Testa Build?</b> Sim
+     * </pre>
+     * @param project
+     * @param userPrompt
+     * @return
+     */
     public String executar(Project project, String userPrompt) {
         log.info("[EXECUTAR] Iniciando chamada da Responses API do projeto {}", project != null ? project.getSigla() : null);
 
@@ -92,7 +100,10 @@ public class CodeGeneratorOpenApiAgent {
 
             String deploymentName = System.getenv().getOrDefault("AZURE_OPENAI_DEPLOYMENT", "gpt-5.3-codex").trim();
 
-            String systemPrompt = readResourceFile(SYSTEM_PROMPT_RESOURCE_PATH);
+            //String systemPrompt = readResourceFile(SYSTEM_PROMPT_RESOURCE_PATH);
+            String systemPrompt = projectService.getConstitution(project);
+
+            log.debug("[EXECUTAR] system-prompt, [file:{}]", LogUtils.saveLog(systemPrompt, "system-prompt", "md"));
 
             List<FunctionTool> functionTools = montarTools();
 
@@ -100,7 +111,7 @@ public class CodeGeneratorOpenApiAgent {
                     .model(deploymentName)
                     .instructions(systemPrompt)
                     .input(userPrompt)
-                    .toolChoice(!functionTools.isEmpty() ? ToolChoiceOptions.AUTO : ToolChoiceOptions.NONE);
+                    .toolChoice(!functionTools.isEmpty() ? ToolChoiceOptions.REQUIRED : ToolChoiceOptions.AUTO);
 
             for (FunctionTool functionTool : functionTools) {
                 createParamsBuilder.addTool(functionTool);
@@ -112,14 +123,17 @@ public class CodeGeneratorOpenApiAgent {
             List<String> toolCalls = new ArrayList<>();
             List<String> toolCallOutputs = new ArrayList<>();
             List<String> textos = new ArrayList<>();
+            List<String> textosRespostaAtual = new ArrayList<>();
 
-            coletarSaida(response.output(), toolCalls, toolCallOutputs, textos);
+            coletarSaida(response.output(), toolCalls, toolCallOutputs, textosRespostaAtual);
+            textos.addAll(textosRespostaAtual);
 
             int loop = 0;
+            int toolOnlyFeedbackAttempts = 0;
             while (loop < MAX_TOOL_LOOPS) {
                 List<ResponseInputItem> functionCallOutputs = executarFunctionCalls(response.output(), toolCallOutputs);
                 if (!functionCallOutputs.isEmpty()) {
-                    log.info("[EXECUTAR] Enviando function_call_output quantidade={} loop={}", functionCallOutputs.size(), loop + 1);
+                    log.trace("[EXECUTAR-LOOP-{}] Enviando function_call_output quantidade={}", (loop + 1), functionCallOutputs.size());
 
                     response = client.responses().create(ResponseCreateParams.builder()
                             .model(deploymentName)
@@ -127,12 +141,44 @@ public class CodeGeneratorOpenApiAgent {
                             .inputOfResponse(functionCallOutputs)
                             .build());
 
-                    coletarSaida(response.output(), toolCalls, toolCallOutputs, textos);
+                    textosRespostaAtual = new ArrayList<>();
+                    coletarSaida(response.output(), toolCalls, toolCallOutputs, textosRespostaAtual);
+                    textos.addAll(textosRespostaAtual);
+                    toolOnlyFeedbackAttempts = 0;
                     loop++;
                     continue;
                 }
 
-                if (project != null) {
+                if (hasActionableTextOutputs(textosRespostaAtual)) {
+                    if (toolOnlyFeedbackAttempts >= 2) {
+                        log.warn("[EXECUTAR] Limite de tentativas para corrigir resposta textual atingido");
+                        toolCallOutputs.add("tool_only_enforcement status=aborted output=limite de tentativas atingido");
+                        break;
+                    }
+
+                    String feedback = buildToolOnlyFeedback(textosRespostaAtual);
+                    log.warn("[EXECUTAR] Resposta com instrucoes textuais sem tool_calls; solicitando execucao real via tools");
+                    toolOnlyFeedbackAttempts++;
+
+                    ResponseCreateParams.Builder responseCreateParamsBuilder = ResponseCreateParams.builder()
+                            .model(deploymentName)
+                            .previousResponseId(response.id())
+                            .input(feedback)
+                            .toolChoice(functionTools.isEmpty() ? ToolChoiceOptions.NONE : ToolChoiceOptions.REQUIRED);
+
+                    for (FunctionTool functionTool : functionTools) {
+                        responseCreateParamsBuilder.addTool(functionTool);
+                    }
+
+                    response = client.responses().create(responseCreateParamsBuilder.build());
+                    textosRespostaAtual = new ArrayList<>();
+                    coletarSaida(response.output(), toolCalls, toolCallOutputs, textosRespostaAtual);
+                    textos.addAll(textosRespostaAtual);
+                    loop++;
+                    continue;
+                }
+
+                if (project != null && false) {
 
                     String buildFinalOutput = validarBuildFinalComDocker(project);
                     toolCallOutputs.add("final_validation=docker_build_and_test status=completed output=" + buildFinalOutput);
@@ -147,17 +193,24 @@ public class CodeGeneratorOpenApiAgent {
                             + "\n\nOBRIGATÓRIO: responda usando ferramentas para aplicar a correção; não finalize com texto.";
                     log.warn("[EXECUTAR] Validação final falhou; realimentando LLM com feedback do build");
 
-                    response = client.responses().create(ResponseCreateParams.builder()
+                    ResponseCreateParams.Builder responseCreateParamsBuilder = ResponseCreateParams.builder()
                             .model(deploymentName)
                             .previousResponseId(response.id())
                             .input(feedback)
-                            .toolChoice(functionTools.isEmpty() ? ToolChoiceOptions.NONE : ToolChoiceOptions.REQUIRED)
-                            .build());
+                            .toolChoice(functionTools.isEmpty() ? ToolChoiceOptions.NONE : ToolChoiceOptions.REQUIRED);
 
-                    coletarSaida(response.output(), toolCalls, toolCallOutputs, textos);
+                    for (FunctionTool functionTool  : functionTools) {
+                        responseCreateParamsBuilder.addTool(functionTool);
+                    }
+
+                    response = client.responses().create(responseCreateParamsBuilder.build());
+
+                    textosRespostaAtual = new ArrayList<>();
+                    coletarSaida(response.output(), toolCalls, toolCallOutputs, textosRespostaAtual);
+                    textos.addAll(textosRespostaAtual);
                 }
 
-                loop++;
+                break;
             }
 
             String resposta = String.join("\n", textos);
@@ -178,6 +231,7 @@ public class CodeGeneratorOpenApiAgent {
     }
 
     private OpenAIClient getOpenAIClient() {
+
         String baseUrl = System.getenv().getOrDefault("SPRING_AI_OPENAI_BASE_URL", "").trim();
         String apiKey = System.getenv().getOrDefault("SPRING_AI_OPENAI_API_KEY", "").trim();
         String deploymentName = System.getenv().getOrDefault("AZURE_OPENAI_DEPLOYMENT", "gpt-5.3-codex").trim();
@@ -199,7 +253,7 @@ public class CodeGeneratorOpenApiAgent {
                 FindFilesTool.createTool(),
                 GrepFilesTool.createTool(),
                 ReadFileTool.createTool(),
-                criarUpdateFileToolDefinition(),
+                UpdateFileTool.createTool(),
                 DockerBuildAndTestTool.createTool()
         );
 
@@ -318,9 +372,16 @@ public class CodeGeneratorOpenApiAgent {
             }
 
             ResponseFunctionToolCall functionCall = functionCallOptional.get();
+            log.debug("[EXEC_FUNC_CALL] {}", functionCall.name());
 
             try {
+
                 Map<String, String> params = parseFunctionArguments(functionCall.arguments());
+
+                for (Map.Entry<String, String> entry : params.entrySet()) {
+                    log.trace("[EXEC_FUNC_CALL] param key: {}, value: {}", entry.getKey(), entry.getValue());
+
+                }
                 String toolResult = executarTool(functionCall.name(), params);
 
                 results.add(ResponseInputItem.ofFunctionCallOutput(
@@ -331,11 +392,13 @@ public class CodeGeneratorOpenApiAgent {
                                 .build()
                 ));
 
-                String outputSummary = String.format("callId=%s status=completed output=%s",
+                String outputSummary = String.format("name=%s params=%s callId=%s status=completed output=%s",
+                        functionCall.name(),
+                        params,
                         functionCall.callId(),
                         toolResult);
                 toolCallOutputs.add(outputSummary);
-                log.info("[TOOL_OUT] {}", outputSummary);
+                log.debug("[EXEC_FUNC_CALL] result {}", StringUtils.abbreviate(toolResult, 100));
             } catch (Exception e) {
                 log.error("[EXEC_FUNC_CALL] Erro ao executar tool create_file", e);
 
@@ -452,6 +515,47 @@ public class CodeGeneratorOpenApiAgent {
             log.error("[READ_RES] Erro ao ler arquivo de resources: {}", resourcePath, e);
             throw new RuntimeException("Falha ao ler arquivo de resources: " + resourcePath, e);
         }
+    }
+
+    private boolean hasActionableTextOutputs(List<String> textos) {
+        log.debug("[HAS_ACTIONABLE] Validando se ha instrucoes textuais acionaveis");
+
+        if (textos == null || textos.isEmpty()) {
+            return false;
+        }
+
+        for (String texto : textos) {
+            if (texto == null || texto.isBlank()) {
+                continue;
+            }
+
+            String normalized = texto.toLowerCase(Locale.ROOT);
+            boolean hasFilePath = normalized.contains("/tmp/") || normalized.contains(".java")
+                    || normalized.contains(".ts") || normalized.contains(".html") || normalized.contains(".md");
+            boolean hasImperative = normalized.contains("atualize o arquivo")
+                    || normalized.contains("crie o arquivo")
+                    || normalized.contains("atualizar o arquivo")
+                    || normalized.contains("create")
+                    || normalized.contains("update")
+                    || normalized.contains("```\n");
+
+            if (hasFilePath && hasImperative) {
+                log.debug("[HAS_ACTIONABLE] Instrucoes textuais detectadas");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String buildToolOnlyFeedback(List<String> textos) {
+        log.debug("[BUILD_TOOL_FEEDBACK] Montando feedback para forcar tool_calls");
+
+        String ultimoTexto = textos == null || textos.isEmpty() ? "" : textos.get(textos.size() - 1);
+        return "PROTOCOLO VIOLADO: voce retornou instrucoes em texto ao inves de executar as alteracoes via tools. "
+                + "Nao descreva codigo nem passos. Execute agora TODAS as alteracoes pendentes com create_file/update_file e finalize com docker_build_and_test. "
+                + "Resposta deve conter apenas tool_calls.\n\nTEXTO_ANTERIOR:\n"
+                + StringUtils.abbreviate(ultimoTexto, 3000);
     }
 
 }

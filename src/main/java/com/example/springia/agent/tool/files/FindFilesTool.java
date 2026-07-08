@@ -14,23 +14,28 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Ferramenta para listar arquivos e diretórios
+ * Ferramenta para listar arquivos e diretórios.
+ * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.tool.files.FindFilesTool" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'
+ * logging.level.com.example.springia.agent.tool.files.FindFilesTool=TRACE
  */
 @Slf4j
 public class FindFilesTool implements Tool {
 
     @Override
     public String getName() {
+        log.info("[GET_NAME] Retornando nome da tool");
         return "find_files";
     }
 
     @Override
     public String getDescription() {
+        log.info("[GET_DESCRIPTION] Retornando descricao da tool");
         return "Busca arquivos por nome, recursivamente, a partir de um diretório específico";
     }
 
     @Override
     public Map<String, String> getParameters() {
+        log.info("[GET_PARAMETERS] Montando parametros da tool");
         Map<String, String> params = new HashMap<>();
         params.put("directory_path", "Path do diretório raiz da busca - OBRIGATORIO");
         params.put("file_name", "Nome do arquivo para busca exata (ignora maiúsculas/minúsculas) - OBRIGATORIO");
@@ -39,6 +44,7 @@ public class FindFilesTool implements Tool {
 
     @Override
     public String execute(Map<String, String> params) throws Exception {
+        log.info("[EXECUTE] Iniciando busca de arquivos");
         String dirPath = params.getOrDefault("directory_path", "").trim();
         String fileName = params.getOrDefault("file_name", "").trim();
 
@@ -67,17 +73,19 @@ public class FindFilesTool implements Tool {
             itens = stream
                     .filter(Files::isRegularFile)
                     .filter(current -> current.getFileName().toString().toLowerCase().equals(normalizedFileName))
+                    .peek(current -> log.trace("[EXECUTE] Arquivo candidato: {}", current))
                     .sorted()
                     .map(current -> "[FILE] " + path.relativize(current).toString().replace("\\", "/"))
                     .collect(Collectors.toList());
         }
 
         String result = String.join("\n", itens);
-        log.info("[TOOL] Busca por arquivo '{}' em {} retornou {} itens", fileName, path, itens.size());
+        log.info("[EXECUTE] Busca por arquivo '{}' em {} retornou {} itens", fileName, path, itens.size());
         return result;
     }
 
     public static RequestToolDefinition createTool(){
+        log.info("[CREATE_TOOL] Montando definicao da tool find_files");
         return RequestToolDefinition.builder()
                 .type("function")
                 .name("find_files")

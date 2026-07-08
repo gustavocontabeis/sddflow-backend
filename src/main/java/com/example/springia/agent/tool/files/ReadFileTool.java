@@ -15,7 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Ferramenta para ler arquivos do filesystem
+ * Ferramenta para ler arquivos do filesystem.
+ * curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.tool.files.ReadFileTool" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'
+ * logging.level.com.example.springia.agent.tool.files.ReadFileTool=TRACE
  */
 @Slf4j
 @Component
@@ -23,16 +25,19 @@ public class ReadFileTool implements Tool {
 
     @Override
     public String getName() {
+        log.info("[GET_NAME] Retornando nome da tool");
         return "read_file";
     }
 
     @Override
     public String getDescription() {
+        log.info("[GET_DESCRIPTION] Retornando descricao da tool");
         return "Lê o conteúdo de um arquivo existente no filesystem";
     }
 
     @Override
     public Map<String, String> getParameters() {
+        log.info("[GET_PARAMETERS] Montando parametros da tool");
         Map<String, String> params = new HashMap<>();
         params.put("file_path", "Caminho absoluto do arquivo a ler");
         return params;
@@ -40,6 +45,7 @@ public class ReadFileTool implements Tool {
 
     @Override
     public String execute(Map<String, String> params) throws Exception {
+        log.info("[EXECUTE] Iniciando leitura de arquivo");
         String filePath = params.get("file_path");
 
         if (filePath == null || filePath.isBlank()) {
@@ -49,15 +55,16 @@ public class ReadFileTool implements Tool {
         var path = Paths.get(FileUtils.fixPath(filePath));
 
         if (!Files.exists(path)) {
-            throw new IllegalArgumentException("Arquivo não encontrado: " + filePath);
+            return "[Arquivo não encontrado: "+filePath+"]"; //throw new IllegalArgumentException("Arquivo não encontrado: " + filePath);
         }
 
         String content = Files.readString(path);
-        log.info("[TOOL] Arquivo lido: {} ({}bytes)", path, content.length());
+        log.info("[EXECUTE] Arquivo lido: {} ({} bytes)", path, content.length());
         return content;
     }
 
     public static RequestToolDefinition createTool(){
+        log.info("[CREATE_TOOL] Montando definicao da tool read_file");
         return RequestToolDefinition.builder()
                 .type("function")
                 .name("read_file")

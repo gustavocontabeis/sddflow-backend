@@ -160,5 +160,56 @@ public class ProjectService {
 
         return project;
     }
+
+    public String getConstitution(Project project) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("# CONTITUTION ").append("\n\n");
+        sb.append("- id (project_id): ").append(project.getId()).append("\n");
+        sb.append("- sigla: ").append(safe(project.getSigla())).append("\n");
+        sb.append("- nome: ").append(safe(project.getName())).append("\n");
+        sb.append("\n\n");
+        sb.append(safeBlock(project.getConstitution())).append("\n");
+
+        List<CodeRepo> repos = project.getRepos();
+        if (repos == null || repos.isEmpty()) {
+            sb.append("\n## Repositórios\n");
+            sb.append("[nenhum repositório configurado]\n");
+            return sb.toString().trim();
+        }
+
+        sb.append("\n## Repositórios\n");
+
+        for (CodeRepo repo : repos) {
+            log.trace("[BUILD_SYS_PROMPT] Processando repositório {}", repo.getName());
+
+            sb.append("\n### Repositório\n");
+            sb.append("- id: ").append(repo.getId()).append("\n");
+            sb.append("- nome: ").append(safe(repo.getName())).append("\n");
+            sb.append("- path: ").append(safe(repo.getPath())).append("\n");
+            sb.append("- url: ").append(safe(repo.getUrl())).append("\n");
+            sb.append("- branch: ").append(safe(repo.getBranch())).append("\n");
+            sb.append("- tipo: ").append(repo.getType() != null ? repo.getType().name() : "[vazio]").append("\n");
+            sb.append("- extensões de Arquivos Fonte: ").append(safe(repo.getExtensoesDeArquivosFonte())).append("\n");
+            sb.append("- comando de compilação: ").append(safe(repo.getComandoCompilacao())).append("\n");
+            sb.append("#### CONSTITUTION DO REPOSITÓRIO:\n");
+            sb.append(safeBlock(repo.getConstitution())).append("\n");
+            sb.append("#### ESTRUTURA DO REPOSITÓRIO:\n");
+            sb.append(safeBlock(repo.getStructure())).append("\n");
+        }
+        return sb.toString();
+    }
+    private String safe(String value) {
+        if (value == null || value.isBlank()) {
+            return "[vazio]";
+        }
+        return value;
+    }
+
+    private String safeBlock(String value) {
+        if (value == null || value.isBlank()) {
+            return "[vazio]";
+        }
+        return value.strip();
+    }
 }
 

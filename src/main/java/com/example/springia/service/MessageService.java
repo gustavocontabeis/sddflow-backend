@@ -1,20 +1,16 @@
 package com.example.springia.service;
 
-import com.example.springia.agent.client.CodeGeneratorOpenApiAgent;
+import com.example.springia.agent.client.CodeGeneratorOpenAiAgent;
 import com.example.springia.model.*;
 import com.example.springia.model.enums.MessageRole;
 import com.example.springia.repository.ConversationRepository;
 import com.example.springia.repository.MessageRepository;
 import com.example.springia.repository.ProjectRepository;
-import com.example.springia.repository.SpecificationDocumentRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -24,14 +20,14 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ProjectRepository projetctRepository;
     private final ConversationRepository conversationRepository;
-    private final CodeGeneratorOpenApiAgent chatClient;
+    private final CodeGeneratorOpenAiAgent chatClient;
     private final DiscoveryService discoveryService;
 
     public MessageService(
             MessageRepository messageRepository,
             ProjectRepository projetctRepository,
             ConversationRepository conversationRepository,
-            CodeGeneratorOpenApiAgent codeGeneratorOpenApiAgent,
+            CodeGeneratorOpenAiAgent codeGeneratorOpenApiAgent,
             DiscoveryService discoveryService
     ) {
         this.messageRepository = messageRepository;

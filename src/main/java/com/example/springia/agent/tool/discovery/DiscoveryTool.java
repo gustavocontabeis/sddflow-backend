@@ -4,7 +4,6 @@ import com.example.springia.agent.tool.Tool;
 import com.example.springia.agent.tool.files.GrepFilesTool;
 import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
-import com.example.springia.repository.CodeRepoRepository;
 import com.example.springia.repository.ProjectRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +24,8 @@ import java.util.stream.Collectors;
  * Ferramenta para descobrir informações em arquivos do projeto a partir da pergunta do usuário.
  * O fluxo usa o diagrama de classes salvo em structure para inferir o melhor critério de busca
  * e então delega a leitura do código-fonte para a GrepFilesTool.
+ * <p>{@code curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.tool.discovery.DiscoveryTool" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'}</p>
+ * <p>{@code logging.level.com.example.springia.agent.tool.discovery.DiscoveryTool=DEBUG}</p>
  */
 @Slf4j
 public class DiscoveryTool implements Tool {
@@ -53,11 +54,13 @@ public class DiscoveryTool implements Tool {
 
     @Override
     public String getName() {
+        log.info("[GET_NAME] Retornando nome da ferramenta");
         return "discovery_tool";
     }
 
     @Override
     public String getDescription() {
+        log.info("[GET_DESCRIPTION] Retornando descrição da ferramenta");
         return "Busca informações em arquivos de um projeto a partir de uma pergunta funcional. " +
                 "Localiza o projeto, lê os structures dos repositórios, infere o critério de busca " +
                 "e executa grep nos arquivos relevantes.";
@@ -65,6 +68,7 @@ public class DiscoveryTool implements Tool {
 
     @Override
     public Map<String, String> getParameters() {
+        log.info("[GET_PARAMETERS] Retornando parâmetros da ferramenta");
         Map<String, String> params = new HashMap<>();
         params.put("project_id", "ID do projeto a ser analisado (obrigatório)");
         params.put("question", "Pergunta sobre o código-fonte do projeto (obrigatória)");
@@ -79,6 +83,9 @@ public class DiscoveryTool implements Tool {
             @org.springframework.ai.tool.annotation.ToolParam(description = "ID do projeto") Long projectId,
             @org.springframework.ai.tool.annotation.ToolParam(description = "Pergunta sobre os arquivos do projeto") String question
     ) throws Exception {
+        log.info("[DISCOVERY_TOOL] Iniciando chamada via anotação Spring AI. projectId={} questionLength={}",
+                projectId,
+                question == null ? 0 : question.length());
         Map<String, String> params = new HashMap<>();
         params.put("project_id", projectId == null ? "" : String.valueOf(projectId));
         params.put("question", question == null ? "" : question);
@@ -87,18 +94,24 @@ public class DiscoveryTool implements Tool {
 
     @Override
     public String execute(Map<String, String> params) throws Exception {
+        log.info("[EXECUTE] Iniciando execução do discovery_tool");
         Long projectId = parseProjectId(params.get("project_id"));
         String question = params.get("question");
 
         if (question == null || question.isBlank()) {
+            log.warn("[EXECUTE] Parâmetro question não informado");
             throw new IllegalArgumentException("O parâmetro 'question' é obrigatório");
         }
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado: " + projectId));
+                .orElseThrow(() -> {
+                    log.warn("[EXECUTE] Projeto não encontrado. projectId={}", projectId);
+                    return new IllegalArgumentException("Projeto não encontrado: " + projectId);
+                });
 
         List<CodeRepo> repos = project.getRepos();
         if (repos == null || repos.isEmpty()) {
+            log.warn("[EXECUTE] Projeto sem repositórios configurados. projectId={}", projectId);
             throw new IllegalStateException("Projeto sem repositórios configurados para discovery_tool");
         }
 
@@ -107,6 +120,7 @@ public class DiscoveryTool implements Tool {
         SearchCriteria criteria = null;
         StringBuilder grepResults = new StringBuilder();
         for (CodeRepo repo : repos) {
+            log.trace("[EXECUTE] Processando repositório name={} path={}", repo.getName(), repo.getPath());
             criteria = inferSearchCriteria(question, repo.getStructure(), repo.getExtensoesDeArquivosFonte());
 
             Map<String, String> grepParams = new HashMap<>();
@@ -121,6 +135,8 @@ public class DiscoveryTool implements Tool {
             grepResults.append("\n");
 
         }
+
+        log.info("[EXECUTE] Discovery concluído. projectId={} repos={}", projectId, repos.size());
 
         return """
                 Discovery do projeto %d (%s)
@@ -149,21 +165,27 @@ public class DiscoveryTool implements Tool {
     }
 
     private Long parseProjectId(String projectId) {
+        log.debug("[PARSE_PROJECT_ID] Iniciando parse do project_id");
         if (projectId == null || projectId.isBlank()) {
+            log.warn("[PARSE_PROJECT_ID] project_id não informado");
             throw new IllegalArgumentException("O parâmetro 'project_id' é obrigatório");
         }
 
         try {
             return Long.valueOf(projectId.trim());
         } catch (NumberFormatException e) {
+            log.error("[PARSE_PROJECT_ID] Falha ao converter project_id={}", projectId, e);
+            log.warn("[PARSE_PROJECT_ID] project_id inválido: {}", projectId);
             throw new IllegalArgumentException("O parâmetro 'project_id' deve ser numérico: " + projectId, e);
         }
     }
 
     private String buildStructuresContext(List<CodeRepo> repos) {
+        log.debug("[BUILD_STRUCT_CTX] Montando contexto de structures. totalRepos={}", repos == null ? 0 : repos.size());
         StringBuilder builder = new StringBuilder();
 
         for (CodeRepo repo : repos) {
+            log.trace("[BUILD_STRUCT_CTX] Adicionando repositório ao contexto. name={}", repo.getName());
             builder.append("\n--- REPOSITORIO ---\n")
                     .append("Nome: ").append(safe(repo.getName())).append("\n")
                     .append("Path: ").append(safe(repo.getPath())).append("\n")
@@ -176,7 +198,9 @@ public class DiscoveryTool implements Tool {
     }
 
     private SearchCriteria inferSearchCriteria(String question, String structuresContext, String defaultExtensions) {
+        log.debug("[INFER_SEARCH_CRIT] Iniciando inferência de critério. questionLength={}", question == null ? 0 : question.length());
         if (structuresContext == null || structuresContext.isBlank()) {
+            log.debug("[INFER_SEARCH_CRIT] Structures vazio; aplicando fallback");
             return fallbackCriteria(question, defaultExtensions);
         }
 
@@ -220,17 +244,19 @@ public class DiscoveryTool implements Tool {
                     .content();
 
             if (content == null || content.isBlank()) {
+                log.debug("[INFER_SEARCH_CRIT] Resposta IA vazia; aplicando fallback");
                 return fallbackCriteria(question, defaultExtensions);
             }
 
             return parseCriteria(content, question, defaultExtensions);
         } catch (Exception e) {
-            log.warn("[TOOL] discovery_tool: falha ao inferir critério com IA. Aplicando fallback. question={}", question, e);
+            log.error("[INFER_SEARCH_CRIT] Falha na inferência com IA. question={}", question, e);
             return fallbackCriteria(question, defaultExtensions);
         }
     }
 
     SearchCriteria parseCriteria(String content, String question, String defaultExtensions) throws Exception {
+        log.debug("[PARSE_CRITERIA] Parseando critério retornado pela IA");
         String json = extractJsonObject(content);
         JsonNode node = objectMapper.readTree(json);
 
@@ -254,6 +280,7 @@ public class DiscoveryTool implements Tool {
     }
 
     static SearchCriteria fallbackCriteria(String question, String defaultExtensions) {
+        log.debug("[FALLBACK_CRITERIA] Aplicando critério de fallback");
         List<String> keywords = extractKeywords(question);
 
         String targetClass = keywords.isEmpty() ? "[não identificado]" : capitalize(keywords.getFirst());
@@ -272,6 +299,7 @@ public class DiscoveryTool implements Tool {
     }
 
     static List<String> extractKeywords(String question) {
+        log.debug("[EXTRACT_KEYWORDS] Extraindo palavras-chave da pergunta");
         if (question == null || question.isBlank()) {
             return List.of();
         }
@@ -283,6 +311,7 @@ public class DiscoveryTool implements Tool {
 
         List<String> keywords = new ArrayList<>();
         for (String token : normalized.split("\\s+")) {
+            log.trace("[EXTRACT_KEYWORDS] Avaliando token={}", token);
             if (token.isBlank()) {
                 continue;
             }
@@ -295,6 +324,7 @@ public class DiscoveryTool implements Tool {
     }
 
     static String normalizeExtensions(String rawExtensions, String defaultExtensions) {
+        log.debug("[NORMALIZE_EXT] Normalizando extensões de arquivo");
         String source = rawExtensions == null || rawExtensions.isBlank() ? defaultExtensions : rawExtensions;
         if (source == null || source.isBlank()) {
             return ".java";
@@ -310,10 +340,12 @@ public class DiscoveryTool implements Tool {
     }
 
     static String extractJsonObject(String content) {
+        log.debug("[EXTRACT_JSON] Extraindo JSON da resposta da IA");
         int start = content.indexOf('{');
         int end = content.lastIndexOf('}');
 
         if (start < 0 || end <= start) {
+            log.warn("[EXTRACT_JSON] JSON inválido na resposta recebida");
             throw new IllegalStateException("Nao foi encontrado JSON valido na resposta: " + content);
         }
 
@@ -321,19 +353,23 @@ public class DiscoveryTool implements Tool {
     }
 
     private static String text(JsonNode node, String fieldName) {
+        log.debug("[TEXT] Extraindo campo do JSON. field={}", fieldName);
         JsonNode value = node.get(fieldName);
         return value == null || value.isNull() ? "" : value.asText("").trim();
     }
 
     private static String blankOrDefault(String value, String fallback) {
+        log.debug("[BLANK_OR_DEFAULT] Aplicando fallback para texto vazio");
         return value == null || value.isBlank() ? fallback : value;
     }
 
     private static String safe(String value) {
+        log.debug("[SAFE] Normalizando valor de saída");
         return value == null || value.isBlank() ? "[vazio]" : value;
     }
 
     private static String capitalize(String value) {
+        log.debug("[CAPITALIZE] Capitalizando texto");
         if (value == null || value.isBlank()) {
             return value;
         }

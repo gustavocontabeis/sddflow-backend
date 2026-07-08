@@ -17,10 +17,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -51,14 +48,18 @@ public class ConversationSession {
     @Column(name = "dh_criacao", nullable = false)
     private LocalDateTime createdAt;
 
+    @ToString.Exclude
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "nu_projeto", nullable = false)
     private Project project;
 
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     @OneToOne(fetch = FetchType.EAGER, optional = true, mappedBy = "conversationSession", cascade = {CascadeType.REMOVE}, orphanRemoval = true)
     private UserStory userStory;
 
+    @ToString.Exclude
     @OneToMany(mappedBy = "conversationSession", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Message> messages;
 }

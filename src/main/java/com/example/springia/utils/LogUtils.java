@@ -16,14 +16,22 @@ public class LogUtils {
         return saveLog(context, "", "txt");
     }
 
-    public static String saveLog(String context, String name, String extension) {
+    /**
+     * Exemplo:
+     * log.info("[CHAT] prompt CREATE_USER_STORY [file:{}]: {} ", LogUtils.saveLog(prompt, "prompt-criar-historia-usuario", "md"), prompt.length());
+     * @param content - conteúdo do log
+     * @param name - nome do arquivo
+     * @param extension - Extensão do arquivo. ex: "md", ou "json", ou "txt"
+     * @return
+     */
+    public static String saveLog(String content, String name, String extension) {
         try {
             Path logDir = Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize();
             Files.createDirectories(logDir);
 
             String fileName = "log-" + LocalDateTime.now().format(FILE_TS_FORMAT) + "-" + name + "." + extension;
             Path logFile = logDir.resolve(fileName).toAbsolutePath().normalize();
-            String content = context == null ? "" : context;
+            content = content == null ? "" : content;
 
             Files.writeString(logFile, content, StandardCharsets.UTF_8);
             return logFile.toString();
