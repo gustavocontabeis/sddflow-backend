@@ -3,6 +3,7 @@ package com.example.springia.controller;
 import com.example.springia.agent.client.CodeGeneratorAzureSdkAgent;
 import com.example.springia.agent.client.CodeGeneratorOpenAiAgent;
 import com.example.springia.agent.client.CodeGeneratorResponseAPIAgent;
+import com.example.springia.agentlc4j.LangChaind4jClient;
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
@@ -43,6 +44,7 @@ public class ExecutorAgentController {
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
     private final ProjectService projectService;
+    private final LangChaind4jClient clientlc4j;
 
     /**
      * Executa o agent com uma descrição de tarefa
@@ -116,6 +118,32 @@ public class ExecutorAgentController {
                     """;
 
             codeGeneratorResponseAPIAgent.generateCode(1L, userPrompt);
+
+            return ResponseEntity.ok("{}");
+
+        } catch (Exception e) {
+            log.error("[EXECUTE_2] Erro ao executar task", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("X");
+        }
+    }
+
+    /**
+     * http://localhost:8080/executor-agent/execute-langchain4j-agent
+     * @return resposta textual do gerador de código
+     */
+    @GetMapping("/execute-langchain4j-agent")
+    public ResponseEntity<String> executeLangchain4jAgent() {
+
+        log.info("[EXECUTE] GET /execute-langchain4j-agent");
+
+        try {
+
+            String userPrompt = """
+                    
+                    """;
+
+            clientlc4j.dev();;
 
             return ResponseEntity.ok("{}");
 

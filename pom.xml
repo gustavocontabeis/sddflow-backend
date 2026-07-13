@@ -109,6 +109,21 @@
 			<version>1.0.0-beta.16</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>dev.langchain4j</groupId>
+			<artifactId>langchain4j-azure-open-ai</artifactId>
+			<version>1.17.2</version>
+		</dependency>
+		<dependency>
+			<groupId>dev.langchain4j</groupId>
+			<artifactId>langchain4j-open-ai</artifactId>
+			<version>1.17.2</version>
+		</dependency>
+		<dependency>
+			<groupId>dev.langchain4j</groupId>
+			<artifactId>langchain4j</artifactId>
+			<version>1.17.2</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
