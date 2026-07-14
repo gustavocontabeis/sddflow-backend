@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class LangChaind4jClient {
+public class LangChain4jClient {
 
     public static final String USER_PROMPT = "Olá. Como está a copa do mundo de 2026?";
     public static final String AZURE_AI_OPENAI_API_KEY = "SPRING_AI_OPENAI_API_KEY";

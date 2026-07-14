@@ -3,7 +3,7 @@ package com.example.springia.controller;
 import com.example.springia.agent.client.CodeGeneratorAzureSdkAgent;
 import com.example.springia.agent.client.CodeGeneratorOpenAiAgent;
 import com.example.springia.agent.client.CodeGeneratorResponseAPIAgent;
-import com.example.springia.agentlc4j.LangChaind4jClient;
+import com.example.springia.agentlc4j.LangChain4jClient;
 import com.example.springia.dto.ExecutorAgentRequest;
 import com.example.springia.dto.ExecutorAgentResponse;
 import com.example.springia.dto.ProcessBuilderReturnDTO;
@@ -44,7 +44,7 @@ public class ExecutorAgentController {
     private final ExecutorAgentService executorAgentService;
     private final TaskSddService taskSddService;
     private final ProjectService projectService;
-    private final LangChaind4jClient clientlc4j;
+    private final LangChain4jClient clientlc4j;
 
     /**
      * Executa o agent com uma descrição de tarefa
