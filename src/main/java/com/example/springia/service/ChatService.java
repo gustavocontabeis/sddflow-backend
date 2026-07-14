@@ -264,6 +264,26 @@ public class ChatService {
         return messages;
     }
 
+    @Transactional
+    public void deleteMessage(Long messageId) {
+        log.info("[DELETE_MESSAGE] Iniciando exclusao da mensagem id={}", messageId);
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> {
+                    log.warn("[DELETE_MESSAGE] Mensagem nao encontrada id={}", messageId);
+                    return new IllegalArgumentException("Mensagem nao encontrada: " + messageId);
+                });
+
+        try {
+            messageRepository.delete(message);
+            log.info("[DELETE_MESSAGE] Exclusao concluida id={} sessao={}", messageId,
+                    message.getConversationSession() != null ? message.getConversationSession().getId() : null);
+        } catch (RuntimeException ex) {
+            log.error("[DELETE_MESSAGE] Erro ao excluir mensagem id={}", messageId, ex);
+            throw ex;
+        }
+    }
+
     public UserStory createUserStory(Long sessionId) {
         log.info("[CREATE_USER_STORY] Gerando user story da sessao={}", sessionId);
         log.info("[SPEC] Geracao iniciada sessao={}", sessionId);

@@ -145,6 +145,23 @@ public class ChatController {
 
 
     /**
+     * {@code curl -X DELETE "http://localhost:8080/chat/message/168"}
+     */
+    @DeleteMapping("/message/{messageId}")
+    @Operation(summary = "Remove uma mensagem", description = "Exclui uma mensagem específica pelo seu identificador.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Mensagem removida com sucesso."),
+            @ApiResponse(responseCode = "404", description = "Mensagem não encontrada."),
+            @ApiResponse(responseCode = "500", description = "Erro interno.")
+    })
+    public ResponseEntity<Void> deleteMessage(@Parameter(description = "Identificador da mensagem") @PathVariable Long messageId) {
+        log.info("[DELETE_MESSAGE] DELETE /chat/message/{} messageId={}", messageId, messageId);
+        chatService.deleteMessage(messageId);
+        return ResponseEntity.noContent().build();
+    }
+
+
+    /**
      * {@code curl -X DELETE "http://localhost:8080/chat?sessionId=1"}
      */
     @DeleteMapping
