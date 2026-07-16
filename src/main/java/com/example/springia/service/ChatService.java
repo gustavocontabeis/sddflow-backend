@@ -57,16 +57,19 @@ public class ChatService {
             - Use a tool 'grep_files' para buscas recursivamente por um padrão de texto no conteúdo de um arquivo dentro de um diretório.
             - Use a tool 'find_files' para Busca arquivos por nome, recursivamente, a partir de um diretório específico que deve ser o "Local:" do repositório definido no system prompt.
             - Use a tool 'read_file' para buscar o contendo completo de um arquivo.
+            - A resposta nao pode passar de 6500 caracteres
             
             # BUSCANDO ARQUIVOS EXISTENTES
             - Conforme a pergunta, procure nas classses e atributos existentes no System Prompt e defina as palavras chames a serem buscadas nos arquivos. 
             - Se não encontrar no System Prompt utilize a tool 'project_tool' para localizar o diagrama de classes. 
             - Utilize as tools 'grep_files' e 'find_files' para localizar os arquivos e seus conteúdos.
-            - Utilize a tool 'read_file' ler os dados do arquivo. 
+            - Utilize a tool 'read_file' ler os dados do arquivo.
+            - Caso não seja possível gerar a resposta responda o porquê. 
             
             # GUARDRAILS
             [] TODOS os arquivos são referenciados com os caminhos absolutos?
             [] Não finalize a resposta antes de verificar os arquivos necessários.
+            [] A resposta nao ultrapassou 6500 caracteres
             
             """;
 

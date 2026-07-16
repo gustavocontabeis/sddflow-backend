@@ -35,7 +35,16 @@ public class CodeGeneratorOpenAiAgent {
 
     private static final String SYSTEM_PROMPT_RESOURCE_PATH = "prompts/system-prompt.md";
     private static final int MAX_TOOL_LOOPS = 30;
+    private static final int MAX_TOOL_ONLY_FEEDBACK_ATTEMPTS = 4;
     private static final Set<String> FILE_ALTERATION_TOOL_NAMES = Set.of("create_directory", "create_file", "update_file");
+    private static final String MANDATORY_TOOL_PROTOCOL = """
+            # PROTOCOLO OBRIGATORIO DE EXECUCAO
+            - Use exclusivamente tool_calls para executar qualquer alteracao.
+            - Nunca retorne diff, codigo, markdown ou explicacao em texto.
+            - Antes de alterar arquivo, leia com read_file e aplique create_file/update_file.
+            - Se houver alteracao de codigo, execute docker_build_and_test antes de finalizar.
+            - Se faltarem dados, use tools para descobrir; nao suponha conteudo de arquivo.
+            """;
 
     private final ObjectMapper objectMapper;
     private final ProjectService projectService;
@@ -102,8 +111,7 @@ public class CodeGeneratorOpenAiAgent {
 
             String deploymentName = System.getenv().getOrDefault("AZURE_OPENAI_DEPLOYMENT", "gpt-5.3-codex").trim();
 
-            //String systemPrompt = readResourceFile(SYSTEM_PROMPT_RESOURCE_PATH);
-            String systemPrompt = projectService.getConstitution(project);
+            String systemPrompt = buildSystemPrompt(project);
 
             log.debug("[EXECUTAR] system-prompt, [file:{}]", LogUtils.saveLog(systemPrompt, "system-prompt", "md"));
 
@@ -158,11 +166,12 @@ public class CodeGeneratorOpenAiAgent {
                     continue;
                 }
 
-                if (hasActionableTextOutputs(textosRespostaAtual)) {
-                    if (toolOnlyFeedbackAttempts >= 2) {
+                if (shouldForceToolOnlyResponse(functionTools, textosRespostaAtual)) {
+                    if (toolOnlyFeedbackAttempts >= MAX_TOOL_ONLY_FEEDBACK_ATTEMPTS) {
                         log.warn("[EXECUTAR] Limite de tentativas para corrigir resposta textual atingido");
                         toolCallOutputs.add("tool_only_enforcement status=aborted output=limite de tentativas atingido");
-                        break;
+                        log.warn("[EXECUTAR] Falha de protocolo: resposta textual sem tool_call apos {} tentativas", toolOnlyFeedbackAttempts);
+                        throw new IllegalStateException("LLM respondeu texto sem executar tool_calls obrigatorias");
                     }
 
                     String feedback = buildToolOnlyFeedback(textosRespostaAtual);
@@ -534,6 +543,41 @@ public class CodeGeneratorOpenAiAgent {
             log.error("[READ_RES] Erro ao ler arquivo de resources: {}", resourcePath, e);
             throw new RuntimeException("Falha ao ler arquivo de resources: " + resourcePath, e);
         }
+    }
+
+    private String buildSystemPrompt(Project project) {
+        log.debug("[BUILD_SYS_PROMPT] Montando system prompt para execucao com tools");
+
+        StringBuilder sb = new StringBuilder(MANDATORY_TOOL_PROTOCOL);
+        sb.append("\n\n");
+        sb.append(projectService.getConstitution(project));
+        return sb.toString();
+    }
+
+    private boolean shouldForceToolOnlyResponse(List<FunctionTool> functionTools, List<String> textosRespostaAtual) {
+        log.debug("[FORCE_TOOL_ONLY] Validando se resposta textual deve ser bloqueada");
+
+        if (functionTools == null || functionTools.isEmpty()) {
+            return false;
+        }
+
+        return hasActionableTextOutputs(textosRespostaAtual) || hasAnyTextOutput(textosRespostaAtual);
+    }
+
+    private boolean hasAnyTextOutput(List<String> textos) {
+        log.debug("[HAS_ANY_TEXT] Verificando se houve saida textual");
+
+        if (textos == null || textos.isEmpty()) {
+            return false;
+        }
+
+        for (String texto : textos) {
+            if (texto != null && !texto.isBlank()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean hasActionableTextOutputs(List<String> textos) {

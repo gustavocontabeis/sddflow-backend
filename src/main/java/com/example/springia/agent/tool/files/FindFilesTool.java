@@ -65,11 +65,12 @@ public class FindFilesTool implements Tool {
         var path = Paths.get(FileUtils.fixPath(dirPath));
 
         if (!Files.exists(path)) {
-            throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);
+            return "[Diretório não encontrado: " + dirPath + "]";
+            //throw new IllegalArgumentException("Diretório não encontrado: " + dirPath);
         }
 
         if (!Files.isDirectory(path)) {
-            throw new IllegalArgumentException("Caminho não é um diretório: " + dirPath);
+            return "[Caminho não é um diretório: " + dirPath + "]";
         }
 
         List<String> itens;

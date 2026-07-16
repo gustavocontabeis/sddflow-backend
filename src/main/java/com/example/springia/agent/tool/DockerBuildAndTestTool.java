@@ -63,7 +63,7 @@ public class DockerBuildAndTestTool implements Tool {
                                         .build(),
                                 "id_projeto", RequestToolProperty.builder()
                                         .type("string")
-                                        .description("Numero do ID do projeto.")
+                                        .description("Numero do ID do projeto ('id_projeto' no system prompt).")
                                         .build()
                         ))
                         .required(List.of("validate_all_repos", "id_projeto"))

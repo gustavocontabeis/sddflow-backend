@@ -46,8 +46,8 @@ public class Message {
     private MessageRole role;
 
     @NotBlank
-    @Size(max = 4000)
-    @Column(name = "de_conteudo", nullable = false, length = 4000, columnDefinition = "TEXT")
+    @Size(max = 7000)
+    @Column(name = "de_conteudo", nullable = false, length = 7000, columnDefinition = "TEXT")
     private String content;
 
     @NotNull
