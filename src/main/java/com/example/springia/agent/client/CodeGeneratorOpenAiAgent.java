@@ -5,6 +5,7 @@ import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.DockerBuildAndTestTool;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.agent.tool.files.*;
+import com.example.springia.dto.ExecucaoToolDTO;
 import com.example.springia.model.Project;
 import com.example.springia.repository.ProjectRepository;
 import com.example.springia.service.ProjectService;
@@ -26,7 +27,7 @@ import java.util.*;
 
 /**
  * **Responsabilidade:** Gera código Java usando modelo gpt-5.3-codex com Responses API usando `com.openai.client.OpenAIClient`
- * <p>{@code curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.client.CodeGeneratorOpenApiAgent" -H "Content-Type: application/json" -d '{"configuredLevel":"DEBUG"}'}</p>
+ * <p>{@code curl -X POST "http://localhost:8080/actuator/loggers/com.example.springia.agent.client.CodeGeneratorOpenApiAgent" -H "Content-Type: application/json" -d '{"configuredLevel":"TRACE"}'}</p>
  */
 @Slf4j
 @Component
@@ -34,6 +35,7 @@ public class CodeGeneratorOpenAiAgent {
 
     private static final String SYSTEM_PROMPT_RESOURCE_PATH = "prompts/system-prompt.md";
     private static final int MAX_TOOL_LOOPS = 30;
+    private static final Set<String> FILE_ALTERATION_TOOL_NAMES = Set.of("create_directory", "create_file", "update_file");
 
     private final ObjectMapper objectMapper;
     private final ProjectService projectService;
@@ -130,15 +132,22 @@ public class CodeGeneratorOpenAiAgent {
 
             int loop = 0;
             int toolOnlyFeedbackAttempts = 0;
+            boolean executouAlteracao = false;
             while (loop < MAX_TOOL_LOOPS) {
-                List<ResponseInputItem> functionCallOutputs = executarFunctionCalls(response.output(), toolCallOutputs);
+                List<ExecucaoToolDTO> functionCallOutputs = executarFunctionCalls(response.output(), toolCallOutputs);
                 if (!functionCallOutputs.isEmpty()) {
                     log.trace("[EXECUTAR-LOOP-{}] Enviando function_call_output quantidade={}", (loop + 1), functionCallOutputs.size());
+
+                    if(!executouAlteracao && !functionCallOutputs.stream().filter(a->StringUtils.equalsAny(a.getFunctionName(), "create_directory", "create_file", "update_file")).toList().isEmpty()){
+                        executouAlteracao = true;
+                    }
+
+                    List<ResponseInputItem> responseInputItens = functionCallOutputs.stream().map(a->a.getFunctionCallRespose()).toList();
 
                     response = client.responses().create(ResponseCreateParams.builder()
                             .model(deploymentName)
                             .previousResponseId(response.id())
-                            .inputOfResponse(functionCallOutputs)
+                            .inputOfResponse(responseInputItens)
                             .build());
 
                     textosRespostaAtual = new ArrayList<>();
@@ -359,11 +368,12 @@ public class CodeGeneratorOpenAiAgent {
             }
     }
 
-    private List<ResponseInputItem> executarFunctionCalls(List<ResponseOutputItem> output,
+    private List<ExecucaoToolDTO> executarFunctionCalls(List<ResponseOutputItem> output,
                                                           List<String> toolCallOutputs) {
         log.debug("[EXEC_FUNC_CALL] Executando function calls quantidade={}", output.size());
 
         List<ResponseInputItem> results = new ArrayList<>();
+        List<ExecucaoToolDTO> results2 = new ArrayList<>();
 
         for (ResponseOutputItem responseOutputItem : output) {
             Optional<ResponseFunctionToolCall> functionCallOptional = responseOutputItem.functionCall();
@@ -371,7 +381,11 @@ public class CodeGeneratorOpenAiAgent {
                 continue;
             }
 
+            ExecucaoToolDTO execucaoTool = new ExecucaoToolDTO();
+
             ResponseFunctionToolCall functionCall = functionCallOptional.get();
+            execucaoTool.setFunctionName(functionCall.name());
+            execucaoTool.setFunctionCall(functionCall);
             log.debug("[EXEC_FUNC_CALL] {}", functionCall.name());
 
             try {
@@ -384,13 +398,18 @@ public class CodeGeneratorOpenAiAgent {
                 }
                 String toolResult = executarTool(functionCall.name(), params);
 
-                results.add(ResponseInputItem.ofFunctionCallOutput(
+
+                ResponseInputItem responseInputItem = ResponseInputItem.ofFunctionCallOutput(
                         ResponseInputItem.FunctionCallOutput.builder()
                                 .callId(functionCall.callId())
                                 .output(toolResult)
                                 .type(JsonValue.from("function_call_output"))
                                 .build()
-                ));
+                );
+                execucaoTool.setFunctionCallRespose(responseInputItem);
+
+                results.add(responseInputItem);
+                results2.add(execucaoTool);
 
                 String outputSummary = String.format("name=%s params=%s callId=%s status=completed output=%s",
                         functionCall.name(),
@@ -417,7 +436,7 @@ public class CodeGeneratorOpenAiAgent {
             }
         }
 
-        return results;
+        return results2;
     }
 
     private String executarTool(String toolName, Map<String, String> params) throws Exception {
@@ -541,6 +560,43 @@ public class CodeGeneratorOpenAiAgent {
 
             if (hasFilePath && hasImperative) {
                 log.debug("[HAS_ACTIONABLE] Instrucoes textuais detectadas");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean houveAlteracaoDeArquivo(List<ResponseOutputItem> output,
+                                            List<ResponseInputItem> functionCallOutputs) {
+        log.debug("[HOUVE_ALT] Verificando function calls de alteracao de arquivo");
+
+        if (output == null || output.isEmpty() || functionCallOutputs == null || functionCallOutputs.isEmpty()) {
+            return false;
+        }
+
+        Map<String, String> callIdToName = new HashMap<>();
+        for (ResponseOutputItem responseOutputItem : output) {
+            responseOutputItem.functionCall().ifPresent(functionCall -> {
+                functionCall.id().ifPresent(id -> callIdToName.put(id, functionCall.name()));
+                if (!functionCall.callId().isBlank()) {
+                    callIdToName.put(functionCall.callId(), functionCall.name());
+                }
+            });
+        }
+
+        for (ResponseInputItem responseInputItem : functionCallOutputs) {
+            Optional<ResponseInputItem.FunctionCallOutput> functionCallOutputOptional = responseInputItem.functionCallOutput();
+            if (functionCallOutputOptional.isEmpty()) {
+                continue;
+            }
+
+            String callId = functionCallOutputOptional.get().callId();
+            String callName = callIdToName.get(callId);
+            log.trace("[HOUVE_ALT] callId={} callName={}", callId, callName);
+
+            if (callName != null && FILE_ALTERATION_TOOL_NAMES.contains(callName)) {
+                log.debug("[HOUVE_ALT] Alteracao de arquivo detectada pela tool {}", callName);
                 return true;
             }
         }

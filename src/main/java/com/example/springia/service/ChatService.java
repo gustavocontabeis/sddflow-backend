@@ -37,24 +37,37 @@ import java.util.stream.Collectors;
 public class ChatService {
 
     private static final String FIXED_REQUIREMENTS_INSTRUCTIONS = """
+            # PERSONA
             Você é um Analista de Requisitos sênior.
 
-            Objetivo:
-            - Levantar requisitos funcionais e não funcionais.
+            # OBJETIVO
+            - Levantar requisitos funcionais e não funcionais e recursos envolvidos.
             - Buscar informações do sistema baseado em dados do projeto ou buscar nos arquivos fontes caso necessário.
-            - Identificar ambiguidades e informar somente se existir.
-            - Sugerir melhorias se necessário.
             - Estruturar requisitos em formato claro e validável.
+            - **SEMPRE** Incluir os recursos envolvidos (arquivos fontes) informando sempre o CAMINHO ABSOLUTO deles. Use as tools para isso.
+            - Sugerir melhorias se necessário como uma observação no final da conversa.
 
-            Regras:
+            # REGRAS
             - Sempre faça perguntas quando houver dúvida.
-            - **NUNCA** presuma o nome de algum arquivo ou funcionalidade sem buscar a informação direto no arquivo. Use as tools para isso. Set tiver dificuldade para usar alguma tools retorne o problema.
-            - Não peça permissão para usar as tools. Elas estão a disposição.
-            - Primeiro exiba os requisitos e faça as perguntas no final.
+            - **NUNCA** presuma o nome de algum arquivo ou funcionalidade sem buscar a informação direto no arquivo. Use as tools para isso. Se tiver dificuldade para usar alguma tools retorne o problema.
             - Seja objetivo e estruturado e a resposta nao pode ser maior que 4000 caracteres
+            - Primeiro exiba os requisitos e faça as perguntas no final.
+            - Não peça permissão para usar as tools. Elas estão a disposição.
             - Use a tool 'project_tool' para buscar dados do projeto e seus repositórios.
-            - Use a tool 'grep_files' para buscar arquivos que atendem ao critério de busca.
+            - Use a tool 'grep_files' para buscas recursivamente por um padrão de texto no conteúdo de um arquivo dentro de um diretório.
+            - Use a tool 'find_files' para Busca arquivos por nome, recursivamente, a partir de um diretório específico que deve ser o "Local:" do repositório definido no system prompt.
             - Use a tool 'read_file' para buscar o contendo completo de um arquivo.
+            
+            # BUSCANDO ARQUIVOS EXISTENTES
+            - Conforme a pergunta, procure nas classses e atributos existentes no System Prompt e defina as palavras chames a serem buscadas nos arquivos. 
+            - Se não encontrar no System Prompt utilize a tool 'project_tool' para localizar o diagrama de classes. 
+            - Utilize as tools 'grep_files' e 'find_files' para localizar os arquivos e seus conteúdos.
+            - Utilize a tool 'read_file' ler os dados do arquivo. 
+            
+            # GUARDRAILS
+            [] TODOS os arquivos são referenciados com os caminhos absolutos?
+            [] Não finalize a resposta antes de verificar os arquivos necessários.
+            
             """;
 
     private final ChatClient chatClient;
@@ -68,6 +81,7 @@ public class ChatService {
     private final LogAdvisor logAdvisor;
     private final ProjectTool projectTool;
     private final GrepFilesTool grepFilesTool;
+    private final FindFilesTool findFilesTool;
     private final ReadFileTool readFileTool;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -85,6 +99,7 @@ public class ChatService {
             LogAdvisor logAdvisor,
             ProjectTool projectTool,
             GrepFilesTool grepFilesTool,
+            FindFilesTool findFilesTool,
             ReadFileTool readFileTool
     ) {
         this.chatClient = chatClientBuilder.build();
@@ -98,6 +113,7 @@ public class ChatService {
         this.logAdvisor = logAdvisor;
         this.projectTool = projectTool;
         this.grepFilesTool = grepFilesTool;
+        this.findFilesTool = findFilesTool;
         this.readFileTool = readFileTool;
     }
 
@@ -114,7 +130,6 @@ public class ChatService {
 
         String userInput = request.getMessage();
 
-        saveMessage(session, MessageRole.USER, userInput);
         log.debug("[CHAT] Mensagem USER salva sessao={} tamanho={}", effectiveSessionId, userInput != null ? userInput.length() : 0);
 
         SessionMemory sessionMemory = resolveSessionMemory(session, request.getProjectId());
@@ -125,6 +140,7 @@ public class ChatService {
         }
 
         log.info("[CHAT] RESPONSE: {}", response);
+        saveMessage(session, MessageRole.USER, userInput);
         Message assistant = saveMessage(session, MessageRole.ASSISTANT, response);
         log.debug("[CHAT] Mensagem ASSISTANT salva sessao={} tamanho={}", effectiveSessionId, response.length());
         log.info("[CHAT] Processamento finalizado sessao={}", effectiveSessionId);
@@ -479,10 +495,10 @@ public class ChatService {
             ResponseCreateParams.Builder paramsBuilder = ResponseCreateParams.builder()
                     .model(deploymentName)
                     .instructions(memory.getInstructions())
-                    .toolChoice(ToolChoiceOptions.AUTO)
+                    .toolChoice(ToolChoiceOptions.REQUIRED)
                     .input(userInput);
 
-            OpenAIUtils.montarTools(GrepFilesTool.createTool(), ReadFileTool.createTool(), ProjectTool.createTool())
+            OpenAIUtils.montarTools(ProjectTool.createTool(), GrepFilesTool.createTool(), FindFilesTool.createTool(), ReadFileTool.createTool())
                     .forEach(paramsBuilder::addTool);
 
             if (memory.getPreviousResponseId() != null && !memory.getPreviousResponseId().isBlank()) {
@@ -577,6 +593,7 @@ public class ChatService {
         log.debug("[ROTEAR_TOOL] Roteando para tool={}", toolName);
         return switch (toolName) {
             case "grep_files" -> grepFilesTool.execute(params);
+            case "find_files" -> findFilesTool.execute(params);
             case "read_file" -> readFileTool.execute(params);
             case "project_tool" -> projectTool.execute(params);
             default -> throw new IllegalArgumentException("Tool desconhecida: " + toolName);

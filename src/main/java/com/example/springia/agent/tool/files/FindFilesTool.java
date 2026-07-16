@@ -6,7 +6,10 @@ import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +22,10 @@ import java.util.stream.Collectors;
  * logging.level.com.example.springia.agent.tool.files.FindFilesTool=TRACE
  */
 @Slf4j
+@Component
 public class FindFilesTool implements Tool {
+
+    private static final List<String> IGNORED_DIRECTORIES = List.of("node_modules", "target", ".git");
 
     @Override
     public String getName() {
@@ -72,6 +78,7 @@ public class FindFilesTool implements Tool {
 
             itens = stream
                     .filter(Files::isRegularFile)
+                    .filter(current -> !isInsideIgnoredDirectory(path, current))
                     .filter(current -> current.getFileName().toString().toLowerCase().equals(normalizedFileName))
                     .peek(current -> log.trace("[EXECUTE] Arquivo candidato: {}", current))
                     .sorted()
@@ -82,6 +89,35 @@ public class FindFilesTool implements Tool {
         String result = String.join("\n", itens);
         log.info("[EXECUTE] Busca por arquivo '{}' em {} retornou {} itens", fileName, path, itens.size());
         return result;
+    }
+
+    private boolean isInsideIgnoredDirectory(Path rootPath, Path filePath) {
+        log.debug("[IS_IGNORED_DIR] Verificando diretorio ignorado para {}", filePath);
+        Path relativePath;
+        try {
+            relativePath = rootPath.relativize(filePath);
+        } catch (IllegalArgumentException e) {
+            log.error("[IS_IGNORED_ERROR] Falha ao relativizar caminho {}", filePath, e);
+            return false;
+        }
+
+        for (Path segment : relativePath) {
+            String segmentName = segment.toString();
+            log.trace("[IS_IGNORED_DIR] Segmento analisado: {}", segmentName);
+
+            // Verifica se é diretório oculto (começa com ponto)
+            if (segmentName.startsWith(".")) {
+                log.trace("[IS_IGNORED_DIR] Diretorio oculto encontrado: {}", segmentName);
+                return true;
+            }
+
+            // Verifica se é um dos diretórios ignorados
+            if (IGNORED_DIRECTORIES.contains(segmentName)) {
+                log.trace("[IS_IGNORED_DIR] Diretorio ignorado encontrado: {}", segmentName);
+                return true;
+            }
+        }
+        return false;
     }
 
     public static RequestToolDefinition createTool(){

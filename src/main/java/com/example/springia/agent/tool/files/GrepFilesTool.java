@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 @Component
 public class GrepFilesTool implements Tool {
 
+    private static final List<String> IGNORED_DIRECTORIES = List.of("node_modules", "target", ".git");
+
     @Override
     public String getName() {
         log.info("[GET_NAME] Retornando nome da tool");
@@ -161,8 +163,18 @@ public class GrepFilesTool implements Tool {
         }
 
         for (Path segment : relativePath) {
-            log.trace("[IS_HIDDEN_DIR] Segmento analisado: {}", segment);
-            if (segment.toString().startsWith(".")) {
+            String segmentName = segment.toString();
+            log.trace("[IS_HIDDEN_DIR] Segmento analisado: {}", segmentName);
+
+            // Verifica se é diretório oculto (começa com ponto)
+            if (segmentName.startsWith(".")) {
+                log.trace("[IS_HIDDEN_DIR] Diretorio oculto encontrado: {}", segmentName);
+                return true;
+            }
+
+            // Verifica se é um dos diretórios ignorados
+            if (IGNORED_DIRECTORIES.contains(segmentName)) {
+                log.trace("[IS_HIDDEN_DIR] Diretorio ignorado encontrado: {}", segmentName);
                 return true;
             }
         }
@@ -200,7 +212,7 @@ public class GrepFilesTool implements Tool {
         return RequestToolDefinition.builder()
                 .type("function")
                 .name("grep_files")
-                .description("Busca recursivamente por um padrão de texto em arquivos dentro de um diretório")
+                .description("Busca recursivamente por um padrão de texto no conteúdo de um arquivo dentro de um diretório")
                 .parameters(RequestToolParameters.builder()
                         .type("object")
                         .properties(Map.of(
@@ -228,6 +240,4 @@ public class GrepFilesTool implements Tool {
                 .build();
     }
 }
-
-
 

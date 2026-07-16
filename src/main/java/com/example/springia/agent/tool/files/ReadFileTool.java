@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,8 @@ import java.util.Map;
 @Slf4j
 @Component
 public class ReadFileTool implements Tool {
+
+    private static final List<String> IGNORED_DIRECTORIES = List.of("node_modules", "target", ".git");
 
     @Override
     public String getName() {
@@ -58,9 +61,37 @@ public class ReadFileTool implements Tool {
             return "[Arquivo não encontrado: "+filePath+"]"; //throw new IllegalArgumentException("Arquivo não encontrado: " + filePath);
         }
 
+        // Verifica se o arquivo está em um diretório ignorado
+        if (isInsideIgnoredDirectory(path)) {
+            log.warn("[EXECUTE] Tentativa de leitura de arquivo em diretorio ignorado: {}", path);
+            return "[Acesso negado - arquivo em diretório ignorado: " + filePath + "]";
+        }
+
         String content = Files.readString(path);
         log.info("[EXECUTE] Arquivo lido: {} ({} bytes)", path, content.length());
         return content;
+    }
+
+    private boolean isInsideIgnoredDirectory(Path filePath) {
+        log.debug("[IS_IGNORED_DIR] Verificando diretorio ignorado para {}", filePath);
+
+        for (int i = 0; i < filePath.getNameCount(); i++) {
+            String segmentName = filePath.getName(i).toString();
+            log.trace("[IS_IGNORED_DIR] Segmento analisado: {}", segmentName);
+
+            // Verifica se é diretório oculto (começa com ponto)
+            if (segmentName.startsWith(".")) {
+                log.trace("[IS_IGNORED_DIR] Diretorio oculto encontrado: {}", segmentName);
+                return true;
+            }
+
+            // Verifica se é um dos diretórios ignorados
+            if (IGNORED_DIRECTORIES.contains(segmentName)) {
+                log.trace("[IS_IGNORED_DIR] Diretorio ignorado encontrado: {}", segmentName);
+                return true;
+            }
+        }
+        return false;
     }
 
     public static RequestToolDefinition createTool(){
