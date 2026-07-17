@@ -1,6 +1,7 @@
 package com.example.springia.agent.tool;
 
 import lombok.extern.slf4j.Slf4j;
+import dev.langchain4j.agent.tool.P;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -62,6 +63,17 @@ public class ExecuteCommandTool implements Tool {
         log.info("[TOOL] Comando concluído com código: {}", exitCode);
 
         return "Comando executado com sucesso (código: " + exitCode + ")\n" + output.toString();
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "execute_command", value = "Executa um comando no shell a partir do diretório base do projeto")
+    public String executeCommand(
+            @P(value = "Comando a executar (ex: mvn clean compile, ng build)") String command,
+            @P(value = "Atributo path de CodeRepo com o diretório do repositório") String codeRepoPath
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("command", command == null ? "" : command);
+        params.put("codeRepo_path", codeRepoPath == null ? "" : codeRepoPath);
+        return execute(params);
     }
 }
 

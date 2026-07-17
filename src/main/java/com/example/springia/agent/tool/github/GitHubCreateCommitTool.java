@@ -4,6 +4,7 @@ import com.example.springia.agent.tool.Tool;
 import com.example.springia.dto.CommitRequest;
 import com.example.springia.dto.CommitResponse;
 import com.example.springia.service.GitHubService;
+import dev.langchain4j.agent.tool.P;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,6 +68,25 @@ public class GitHubCreateCommitTool implements Tool {
                "Mensagem: %s\n".formatted(response.getMessage()) +
                "Autor: %s\n".formatted(response.getAuthor()) +
                "URL: %s".formatted(response.getUrl());
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "github_create_commit", value = "Cria ou atualiza um arquivo em um repositório GitHub e gera um commit")
+    public String githubCreateCommit(
+            @P(value = "Nome do usuário ou organização no GitHub") String owner,
+            @P(value = "Nome do repositório") String repo,
+            @P(value = "Branch onde o commit será criado") String branch,
+            @P(value = "Mensagem do commit") String message,
+            @P(value = "Caminho do arquivo no repositório") String filePath,
+            @P(value = "Conteúdo completo do arquivo") String fileContent
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("owner", owner == null ? "" : owner);
+        params.put("repo", repo == null ? "" : repo);
+        params.put("branch", branch == null ? "" : branch);
+        params.put("message", message == null ? "" : message);
+        params.put("file_path", filePath == null ? "" : filePath);
+        params.put("file_content", fileContent == null ? "" : fileContent);
+        return execute(params);
     }
 }
 

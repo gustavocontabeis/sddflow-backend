@@ -4,6 +4,7 @@ import com.example.springia.agent.tool.Tool;
 import com.example.springia.dto.PullRequestRequest;
 import com.example.springia.dto.PullRequestResponse;
 import com.example.springia.service.GitHubService;
+import dev.langchain4j.agent.tool.P;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +67,25 @@ public class GitHubCreatePullRequestTool implements Tool {
                "Título: %s\n".formatted(response.getTitle()) +
                "Estado: %s\n".formatted(response.getState()) +
                "URL: %s".formatted(response.getHtmlUrl());
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "github_create_pull_request", value = "Abre um Pull Request em um repositório GitHub")
+    public String githubCreatePullRequest(
+            @P(value = "Nome do usuário ou organização no GitHub") String owner,
+            @P(value = "Nome do repositório") String repo,
+            @P(value = "Título do Pull Request") String title,
+            @P(value = "Descrição do Pull Request (opcional)") String description,
+            @P(value = "Branch de origem") String headBranch,
+            @P(value = "Branch de destino") String baseBranch
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("owner", owner == null ? "" : owner);
+        params.put("repo", repo == null ? "" : repo);
+        params.put("title", title == null ? "" : title);
+        params.put("description", description == null ? "" : description);
+        params.put("head_branch", headBranch == null ? "" : headBranch);
+        params.put("base_branch", baseBranch == null ? "" : baseBranch);
+        return execute(params);
     }
 }
 

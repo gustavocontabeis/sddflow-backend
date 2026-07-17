@@ -5,10 +5,12 @@ import com.example.springia.agent.responseapi.request.RequestToolParameters;
 import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -96,6 +98,17 @@ public class UpdateFileTool implements Tool {
                         .build())
                 .strict(true)
                 .build();
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "update_file", value = "Atualiza arquivo existente sobrescrevendo todo o conteúdo")
+    public String updateFile(
+            @P(value = "Caminho absoluto do arquivo a alterar") String filePath,
+            @P(value = "Novo conteúdo completo do arquivo") String content
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("file_path", filePath == null ? "" : filePath);
+        params.put("content", content == null ? "" : content);
+        return execute(params);
     }
 }
 

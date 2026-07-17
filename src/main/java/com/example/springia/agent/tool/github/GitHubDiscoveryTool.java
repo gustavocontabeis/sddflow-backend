@@ -3,6 +3,7 @@ package com.example.springia.agent.tool.github;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.dto.CloneRepositoryRequest;
 import com.example.springia.service.GitHubService;
+import dev.langchain4j.agent.tool.P;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,6 +62,19 @@ public class GitHubDiscoveryTool implements Tool {
 
         return "Discovery concluído para %s/%s (branch: %s). Verifique os logs para o relatório completo."
                 .formatted(owner, repo, branch != null ? branch : "padrão");
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "github_discovery", value = "Clona um repositório GitHub e realiza o discovery completo da aplicação")
+    public String githubDiscovery(
+            @P(value = "Nome do usuário ou organização no GitHub") String owner,
+            @P(value = "Nome do repositório") String repo,
+            @P(value = "Branch a ser analisada (opcional)") String branch
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("owner", owner == null ? "" : owner);
+        params.put("repo", repo == null ? "" : repo);
+        params.put("branch", branch == null ? "" : branch);
+        return execute(params);
     }
 }
 

@@ -7,6 +7,7 @@ import com.example.springia.model.Project;
 import com.example.springia.repository.ProjectRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
@@ -75,13 +76,13 @@ public class DiscoveryTool implements Tool {
         return params;
     }
 
-    @org.springframework.ai.tool.annotation.Tool(
+    @dev.langchain4j.agent.tool.Tool(
             name = "discovery_tool",
-            description = "Descobre informações no código-fonte de um projeto a partir da pergunta do usuário"
+            value = "Descobre informações no código-fonte de um projeto a partir da pergunta do usuário"
     )
     public String discoveryTool(
-            @org.springframework.ai.tool.annotation.ToolParam(description = "ID do projeto") Long projectId,
-            @org.springframework.ai.tool.annotation.ToolParam(description = "Pergunta sobre os arquivos do projeto") String question
+            @P(value = "ID do projeto") Long projectId,
+            @P(value = "Pergunta sobre os arquivos do projeto") String question
     ) throws Exception {
         log.info("[DISCOVERY_TOOL] Iniciando chamada via anotação Spring AI. projectId={} questionLength={}",
                 projectId,

@@ -4,6 +4,7 @@ import com.example.springia.agent.tool.Tool;
 import com.example.springia.dto.CloneRepositoryRequest;
 import com.example.springia.dto.CloneRepositoryResponse;
 import com.example.springia.service.GitHubService;
+import dev.langchain4j.agent.tool.P;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,6 +68,19 @@ public class GitHubCloneRepositoryTool implements Tool {
                "Branch: %s\n".formatted(response.getBranch()) +
                "Caminho local: %s\n".formatted(response.getClonedPath()) +
                "Duração: %dms".formatted(response.getDurationMs());
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "github_clone_repository", value = "Clona um repositório do GitHub em um diretório temporário")
+    public String githubCloneRepository(
+            @P(value = "Nome do usuário ou organização no GitHub") String owner,
+            @P(value = "Nome do repositório") String repo,
+            @P(value = "Branch a ser clonada (opcional)") String branch
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("owner", owner == null ? "" : owner);
+        params.put("repo", repo == null ? "" : repo);
+        params.put("branch", branch == null ? "" : branch);
+        return execute(params);
     }
 }
 

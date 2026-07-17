@@ -6,6 +6,7 @@ import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.model.Project;
 import com.example.springia.service.ProjectService;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -61,12 +62,12 @@ public class ProjectTool implements Tool {
         return buildSystemPrompt(project);
     }
 
-    @org.springframework.ai.tool.annotation.Tool(
+    @dev.langchain4j.agent.tool.Tool(
             name = "project_tool",
-            description = "Retorna um system prompt com os dados do projeto usando a estrutura da OpenAI API"
+            value = "Retorna um system prompt com os dados do projeto usando a estrutura da OpenAI API"
     )
     public String projectTool(
-            @org.springframework.ai.tool.annotation.ToolParam(description = "ID do projeto") Long projectId
+            @P(value = "ID do projeto") Long projectId
     ) {
         log.info("[PROJECT_TOOL] Iniciando execução da projectTool. projectId={}", projectId);
 

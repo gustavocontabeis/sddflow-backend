@@ -10,6 +10,7 @@ import com.example.springia.model.CodeRepo;
 import com.example.springia.model.Project;
 import com.example.springia.repository.ProjectRepository;
 import com.example.springia.utils.ProcessBuilderUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -386,6 +387,20 @@ public class DockerBuildAndTestTool implements Tool {
     public void setProject(Project project){
         log.info("[SET_PROJECT] Atualizando projeto para {}", project != null ? project.getName() : "<null>");
         this.project = project;
+    }
+
+    @dev.langchain4j.agent.tool.Tool(
+            name = "docker_build_and_test",
+            value = "Compila e testa TODOS os repositórios do projeto usando Docker quando houver Dockerfile"
+    )
+    public String dockerBuildAndTest(
+            @P(value = "Se true valida todos os repositórios; se false executa validação rápida") String validateAllRepos,
+            @P(value = "ID numérico do projeto") String idProjeto
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("validate_all_repos", validateAllRepos == null ? "" : validateAllRepos);
+        params.put("id_projeto", idProjeto == null ? "" : idProjeto);
+        return execute(params);
     }
 }
 

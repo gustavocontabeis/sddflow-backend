@@ -5,6 +5,7 @@ import com.example.springia.agent.responseapi.request.RequestToolParameters;
 import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -100,6 +101,17 @@ public class CreateFileTool implements Tool {
                         .build())
                 .strict(true)
                 .build();
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "create_file", value = "Cria um NOVO arquivo no filesystem")
+    public String createFile(
+            @P(value = "Caminho absoluto do arquivo a criar") String filePath,
+            @P(value = "Conteúdo do arquivo") String content
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("file_path", filePath == null ? "" : filePath);
+        params.put("content", content == null ? "" : content);
+        return execute(params);
     }
 }
 

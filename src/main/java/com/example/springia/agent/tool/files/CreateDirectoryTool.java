@@ -5,6 +5,7 @@ import com.example.springia.agent.responseapi.request.RequestToolParameters;
 import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -76,6 +77,15 @@ public class CreateDirectoryTool implements Tool {
                         .build())
                 .strict(true)
                 .build();
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "create_directory", value = "Cria um novo diretório com todos os diretórios pais necessários")
+    public String createDirectory(
+            @P(value = "Caminho absoluto do diretório a criar") String directoryPath
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("directory_path", directoryPath == null ? "" : directoryPath);
+        return execute(params);
     }
 }
 

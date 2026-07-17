@@ -5,6 +5,7 @@ import com.example.springia.agent.responseapi.request.RequestToolParameters;
 import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -144,6 +145,17 @@ public class FindFilesTool implements Tool {
                         .build())
                 .strict(true)
                 .build();
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "find_files", value = "Busca arquivos por nome, recursivamente")
+    public String findFiles(
+            @P(value = "Path do diretório raiz da busca") String directoryPath,
+            @P(value = "Nome do arquivo para busca exata") String fileName
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("directory_path", directoryPath == null ? "" : directoryPath);
+        params.put("file_name", fileName == null ? "" : fileName);
+        return execute(params);
     }
 
 }

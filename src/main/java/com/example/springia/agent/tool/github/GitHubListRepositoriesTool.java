@@ -2,6 +2,7 @@ package com.example.springia.agent.tool;
 
 import com.example.springia.dto.ListRepositoriesResponse;
 import com.example.springia.service.GitHubService;
+import dev.langchain4j.agent.tool.P;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,6 +60,15 @@ public class GitHubListRepositoriesTool implements Tool {
                 .collect(Collectors.joining("\n"));
 
         return "Total de repositórios: %d\n\n%s".formatted(response.getTotal(), repos);
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "github_list_repositories", value = "Lista todos os repositórios públicos de um owner no GitHub")
+    public String githubListRepositories(
+            @P(value = "Nome do usuário ou organização no GitHub") String owner
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("owner", owner == null ? "" : owner);
+        return execute(params);
     }
 }
 

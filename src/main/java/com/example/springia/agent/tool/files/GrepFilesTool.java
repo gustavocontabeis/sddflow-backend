@@ -9,6 +9,7 @@ import com.example.springia.model.Project;
 import com.example.springia.repository.CodeRepoRepository;
 import com.example.springia.repository.ProjectRepository;
 import com.example.springia.utils.FileUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -58,12 +59,12 @@ public class GrepFilesTool implements Tool {
         return params;
     }
 
-    @org.springframework.ai.tool.annotation.Tool(name = "grep_files", description = "Busca padrão de texto em arquivos dos repositórios do projeto")
+    @dev.langchain4j.agent.tool.Tool(name = "grep_files", value = "Busca padrão de texto em arquivos dos repositórios do projeto")
     public String grepFiles(
-            @org.springframework.ai.tool.annotation.ToolParam(description = "Path do diretório raiz da busca") String pathStr,
-            @org.springframework.ai.tool.annotation.ToolParam(description = "Texto ou expressão regular a buscar") String pattern,
-            @org.springframework.ai.tool.annotation.ToolParam(description = "Extensões separadas por vírgula (opcional). Ex: .java,.xml") String fileExtension,
-            @org.springframework.ai.tool.annotation.ToolParam(description = "Ignorar maiúsculas/minúsculas (opcional). Ex: true") Boolean ignoreCase
+            @P(value = "Path do diretório raiz da busca") String pathStr,
+            @P(value = "Texto ou expressão regular a buscar") String pattern,
+            @P(value = "Extensões separadas por vírgula (opcional). Ex: .java,.xml") String fileExtension,
+            @P(value = "Ignorar maiúsculas/minúsculas (opcional). Ex: true") Boolean ignoreCase
     ) throws Exception {
         log.info("[GREP_FILES] Iniciando chamada via anotacao tool");
         Map<String, String> params = new HashMap<>();

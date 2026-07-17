@@ -5,6 +5,7 @@ import com.example.springia.agent.responseapi.request.RequestToolParameters;
 import com.example.springia.agent.responseapi.request.RequestToolProperty;
 import com.example.springia.agent.tool.Tool;
 import com.example.springia.utils.FileUtils;
+import dev.langchain4j.agent.tool.P;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -113,6 +114,15 @@ public class ReadFileTool implements Tool {
                         .build())
                 .strict(true)
                 .build();
+    }
+
+    @dev.langchain4j.agent.tool.Tool(name = "read_file", value = "Lê o conteúdo de um arquivo existente no filesystem")
+    public String readFile(
+            @P(value = "Caminho absoluto do arquivo a ler") String filePath
+    ) throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("file_path", filePath == null ? "" : filePath);
+        return execute(params);
     }
 
 }
